@@ -1,0 +1,42 @@
+Your subscription has been updated!
+
+Hello <%= @user.first_name || @user.email %>,
+
+Great news! Your <%= @application_name %> subscription has been successfully updated.
+
+Subscription Change Details:
+Previous plan: <%= @old_tier.titleize %>
+New plan: <%= @new_tier.titleize %>
+Updated on: <%= Date.current.strftime("%B %d, %Y") %>
+
+<% if @new_tier == 'standard' %>
+Welcome to Standard!
+You now have access to:
+• Priority email support
+• Up to 25 projects
+• Advanced analytics and reporting
+• Enhanced security features
+<% elsif @new_tier == 'premium' %>
+Welcome to Premium!
+You now have access to:
+• 24/7 priority support via chat and email
+• Unlimited projects
+• Custom integrations and API access
+• Advanced analytics and white-label options
+<% else %>
+Thanks for staying with us!
+Your plan change has been processed successfully.
+<% end %>
+
+View Subscription Details: <%= @subscription_url %>
+
+Your new features are available immediately. If you have any questions about your updated plan or need help getting started with new features, our support team is here to help!
+
+Thank you for choosing <%= @application_name %>!
+
+Best regards,
+The <%= @application_name %> Team
+
+--
+<%= @application_name %>
+<%= @support_email %>

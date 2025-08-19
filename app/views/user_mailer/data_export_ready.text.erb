@@ -1,0 +1,31 @@
+Your Data Export is Ready
+
+Hello <%= @user.first_name %>,
+
+Your requested data export has been successfully generated and is ready for download.
+
+Export Details:
+- Filename: <%= @filename %>
+- Generated: <%= Time.current.strftime('%B %d, %Y at %I:%M %p UTC') %>
+<% if File.exist?(@file_path) %>- File Size: <%= number_to_human_size(File.size(@file_path)) %><% end %>
+
+This export contains all your account data including:
+- Profile information
+- Account settings and preferences  
+- Subscription details
+- Account activity history
+
+Download your data: <%= @file_path %>
+
+IMPORTANT: This download link will expire in 24 hours for security reasons. If you need a new export after this time, you can request another one from your account settings.
+
+If you have any questions about your data export, please contact our support team at <%= @support_email %>.
+
+Best regards,
+The <%= @application_name %> Team
+
+---
+<%= @application_name %>
+Email: <%= @support_email %>
+This email was sent to <%= @user.email %>. 
+You received this email because you requested a data export from your account.

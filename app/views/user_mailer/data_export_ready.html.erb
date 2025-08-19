@@ -1,0 +1,38 @@
+<div class="email-content">
+  <h2>Your Data Export is Ready</h2>
+  
+  <p>Hello <%= @user.first_name %>,</p>
+  
+  <p>Your requested data export has been successfully generated and is ready for download.</p>
+  
+  <div class="highlight-box">
+    <h3>Export Details</h3>
+    <ul>
+      <li><strong>Filename:</strong> <%= @filename %></li>
+      <li><strong>Generated:</strong> <%= Time.current.strftime('%B %d, %Y at %I:%M %p UTC') %></li>
+      <li><strong>File Size:</strong> <%= number_to_human_size(File.size(@file_path)) if File.exist?(@file_path) %></li>
+    </ul>
+  </div>
+  
+  <p>This export contains all your account data including:</p>
+  <ul>
+    <li>Profile information</li>
+    <li>Account settings and preferences</li>
+    <li>Subscription details</li>
+    <li>Account activity history</li>
+  </ul>
+  
+  <div class="cta-section">
+    <a href="<%= @file_path %>" class="cta-button">Download Your Data</a>
+  </div>
+  
+  <div class="info-box">
+    <h4>Important Information</h4>
+    <p>This download link will expire in <strong>24 hours</strong> for security reasons. If you need a new export after this time, you can request another one from your account settings.</p>
+  </div>
+  
+  <p>If you have any questions about your data export, please don't hesitate to contact our support team.</p>
+  
+  <p>Best regards,<br>
+  The <%= @application_name %> Team</p>
+</div>

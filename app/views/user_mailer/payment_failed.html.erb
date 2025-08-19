@@ -1,0 +1,35 @@
+<h2>Payment failed - Action required</h2>
+
+<p>Hello <%= @user.first_name || @user.email %>,</p>
+
+<p>We were unable to process your recent payment for your <%= @application_name %> subscription. Your account is still active, but action is required to avoid service interruption.</p>
+
+<div class="highlight-box" style="background-color: #fef2f2; border-left-color: #ef4444;">
+  <p><strong>Payment Failed</strong></p>
+  <p>We'll retry charging your payment method in 3 days. Please update your billing information if needed.</p>
+</div>
+
+<p><strong>What you need to do:</strong></p>
+<ol>
+  <li>Check that your payment method is valid and has sufficient funds</li>
+  <li>Update your billing information if necessary</li>
+  <li>Contact your bank if you believe this is an error</li>
+</ol>
+
+<p style="text-align: center;">
+  <a href="<%= @subscription_url %>" class="btn">Update Billing Information</a>
+</p>
+
+<% if @invoice_url %>
+<p>You can also view the failed invoice details:</p>
+<p style="text-align: center;">
+  <a href="<%= @invoice_url %>" style="color: #667eea; text-decoration: underline;">View Invoice</a>
+</p>
+<% end %>
+
+<p><strong>Need help?</strong></p>
+<p>If you're experiencing issues with your payment or need assistance updating your billing information, our support team is here to help.</p>
+
+<p>We appreciate your business and want to ensure uninterrupted access to your account.</p>
+
+<p>Best regards,<br>The <%= @application_name %> Billing Team</p>

@@ -1,0 +1,288 @@
+<div class="px-4 sm:px-6 lg:px-8">
+  <!-- Page header -->
+  <div class="md:flex md:items-center md:justify-between">
+    <div class="min-w-0 flex-1">
+      <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
+        System Health
+      </h2>
+      <p class="mt-1 text-sm text-gray-500">
+        Monitor your application's health, performance, and infrastructure status.
+      </p>
+    </div>
+    <div class="mt-4 flex md:mt-0 md:ml-4">
+      <button type="button" onclick="window.location.reload()" 
+              class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+        <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+        Refresh
+      </button>
+    </div>
+  </div>
+
+  <!-- System Health Overview -->
+  <div class="mt-8">
+    <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      <!-- Database Health -->
+      <div class="bg-white overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <div class="w-8 h-8 bg-<%= @system_health[:database][:status] == 'healthy' ? 'green' : 'red' %>-100 rounded-lg flex items-center justify-center">
+                <% if @system_health[:database][:status] == 'healthy' %>
+                  <svg class="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                  </svg>
+                <% else %>
+                  <svg class="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                  </svg>
+                <% end %>
+              </div>
+            </div>
+            <div class="ml-5 w-0 flex-1">
+              <dl>
+                <dt class="text-sm font-medium text-gray-500 truncate">Database</dt>
+                <dd class="flex items-baseline">
+                  <div class="text-lg font-semibold text-gray-900">
+                    <%= @system_health[:database][:status].humanize %>
+                  </div>
+                  <% if @system_health[:database][:response_time] %>
+                    <div class="ml-2 text-sm text-gray-500">
+                      <%= @system_health[:database][:response_time] %>ms
+                    </div>
+                  <% end %>
+                </dd>
+              </dl>
+            </div>
+          </div>
+          <div class="mt-3 text-sm text-gray-500">
+            Connections: <%= @system_health[:database][:connection_count] %>/<%= @system_health[:database][:pool_size] %>
+          </div>
+        </div>
+      </div>
+
+      <!-- Redis Health -->
+      <div class="bg-white overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <div class="w-8 h-8 bg-<%= @system_health[:redis][:status] == 'healthy' ? 'green' : 'red' %>-100 rounded-lg flex items-center justify-center">
+                <% if @system_health[:redis][:status] == 'healthy' %>
+                  <svg class="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                  </svg>
+                <% else %>
+                  <svg class="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                  </svg>
+                <% end %>
+              </div>
+            </div>
+            <div class="ml-5 w-0 flex-1">
+              <dl>
+                <dt class="text-sm font-medium text-gray-500 truncate">Redis</dt>
+                <dd class="flex items-baseline">
+                  <div class="text-lg font-semibold text-gray-900">
+                    <%= @system_health[:redis][:status].humanize %>
+                  </div>
+                  <% if @system_health[:redis][:response_time] %>
+                    <div class="ml-2 text-sm text-gray-500">
+                      <%= @system_health[:redis][:response_time] %>ms
+                    </div>
+                  <% end %>
+                </dd>
+              </dl>
+            </div>
+          </div>
+          <div class="mt-3 text-sm text-gray-500">
+            <% if @system_health[:redis][:memory_used] %>
+              Memory: <%= @system_health[:redis][:memory_used] %>
+            <% end %>
+          </div>
+        </div>
+      </div>
+
+      <!-- Application Uptime -->
+      <div class="bg-white overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                <svg class="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+                </svg>
+              </div>
+            </div>
+            <div class="ml-5 w-0 flex-1">
+              <dl>
+                <dt class="text-sm font-medium text-gray-500 truncate">Uptime</dt>
+                <dd class="text-lg font-semibold text-gray-900">
+                  <%= @system_health[:uptime] %>
+                </dd>
+              </dl>
+            </div>
+          </div>
+          <div class="mt-3 text-sm text-gray-500">
+            Rails <%= @application_stats[:rails_version] %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detailed Stats Grid -->
+  <div class="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-2">
+    <!-- Sidekiq Stats -->
+    <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+      <div class="px-4 py-5 sm:px-6">
+        <h3 class="text-lg leading-6 font-medium text-gray-900">Background Jobs (Sidekiq)</h3>
+        <p class="mt-1 max-w-2xl text-sm text-gray-500">Background job processing statistics</p>
+      </div>
+      <div class="border-t border-gray-200">
+        <% if @sidekiq_stats[:error] %>
+          <div class="px-4 py-4 text-sm text-red-600">
+            Error: <%= @sidekiq_stats[:error] %>
+          </div>
+        <% else %>
+          <dl>
+            <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+              <dt class="text-sm font-medium text-gray-500">Processed Jobs</dt>
+              <dd class="mt-1 text-sm text-gray-900 sm:col-span-2">
+                <%= number_with_delimiter(@sidekiq_stats.dig(:overview, :processed) || 0) %>
+              </dd>
+            </div>
+            <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+              <dt class="text-sm font-medium text-gray-500">Failed Jobs</dt>
+              <dd class="mt-1 text-sm text-gray-900 sm:col-span-2">
+                <span class="<%= (@sidekiq_stats.dig(:overview, :failed) || 0) > 0 ? 'text-red-600' : 'text-gray-900' %>">
+                  <%= number_with_delimiter(@sidekiq_stats.dig(:overview, :failed) || 0) %>
+                </span>
+              </dd>
+            </div>
+            <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+              <dt class="text-sm font-medium text-gray-500">Enqueued Jobs</dt>
+              <dd class="mt-1 text-sm text-gray-900 sm:col-span-2">
+                <%= @sidekiq_stats.dig(:overview, :enqueued) || 0 %>
+              </dd>
+            </div>
+            <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+              <dt class="text-sm font-medium text-gray-500">Busy Workers</dt>
+              <dd class="mt-1 text-sm text-gray-900 sm:col-span-2">
+                <%= @sidekiq_stats.dig(:overview, :busy) || 0 %>
+              </dd>
+            </div>
+            <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+              <dt class="text-sm font-medium text-gray-500">Scheduled Jobs</dt>
+              <dd class="mt-1 text-sm text-gray-900 sm:col-span-2">
+                <%= @sidekiq_stats.dig(:overview, :scheduled) || 0 %>
+              </dd>
+            </div>
+          </dl>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Database Stats -->
+    <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+      <div class="px-4 py-5 sm:px-6">
+        <h3 class="text-lg leading-6 font-medium text-gray-900">Database Statistics</h3>
+        <p class="mt-1 max-w-2xl text-sm text-gray-500">Database size and record counts</p>
+      </div>
+      <div class="border-t border-gray-200">
+        <% if @database_stats[:error] %>
+          <div class="px-4 py-4 text-sm text-red-600">
+            Error: <%= @database_stats[:error] %>
+          </div>
+        <% else %>
+          <dl>
+            <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+              <dt class="text-sm font-medium text-gray-500">Total Users</dt>
+              <dd class="mt-1 text-sm text-gray-900 sm:col-span-2">
+                <%= number_with_delimiter(@database_stats[:total_users]) %>
+              </dd>
+            </div>
+            <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+              <dt class="text-sm font-medium text-gray-500">Verified Users</dt>
+              <dd class="mt-1 text-sm text-gray-900 sm:col-span-2">
+                <%= number_with_delimiter(@database_stats[:verified_users]) %>
+              </dd>
+            </div>
+            <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+              <dt class="text-sm font-medium text-gray-500">Active Subscriptions</dt>
+              <dd class="mt-1 text-sm text-gray-900 sm:col-span-2">
+                <%= number_with_delimiter(@database_stats[:active_subscriptions]) %>
+              </dd>
+            </div>
+            <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+              <dt class="text-sm font-medium text-gray-500">Database Size</dt>
+              <dd class="mt-1 text-sm text-gray-900 sm:col-span-2">
+                <%= @database_stats[:database_size] %>
+              </dd>
+            </div>
+            <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+              <dt class="text-sm font-medium text-gray-500">Admin Users</dt>
+              <dd class="mt-1 text-sm text-gray-900 sm:col-span-2">
+                <%= number_with_delimiter(@database_stats[:admin_users]) %>
+              </dd>
+            </div>
+          </dl>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <!-- System Resources -->
+  <% if @system_health[:memory_usage][:status] != 'unavailable' || @system_health[:disk_space][:status] != 'unavailable' %>
+    <div class="mt-8">
+      <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+        <div class="px-4 py-5 sm:px-6">
+          <h3 class="text-lg leading-6 font-medium text-gray-900">System Resources</h3>
+          <p class="mt-1 max-w-2xl text-sm text-gray-500">Memory and disk usage statistics</p>
+        </div>
+        <div class="border-t border-gray-200">
+          <dl>
+            <% unless @system_health[:memory_usage][:status] %>
+              <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt class="text-sm font-medium text-gray-500">Memory Usage</dt>
+                <dd class="mt-1 text-sm text-gray-900 sm:col-span-2">
+                  <%= @system_health[:memory_usage][:used] %> / <%= @system_health[:memory_usage][:total] %>
+                  (<%= @system_health[:memory_usage][:percentage] %>)
+                </dd>
+              </div>
+            <% end %>
+            <% unless @system_health[:disk_space][:status] %>
+              <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt class="text-sm font-medium text-gray-500">Disk Usage</dt>
+                <dd class="mt-1 text-sm text-gray-900 sm:col-span-2">
+                  <%= @system_health[:disk_space][:used] %> / <%= @system_health[:disk_space][:total] %>
+                  (<%= @system_health[:disk_space][:percentage] %>)
+                </dd>
+              </div>
+            <% end %>
+          </dl>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- Quick Links -->
+  <div class="mt-8">
+    <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+      <div class="px-4 py-5 sm:px-6">
+        <h3 class="text-lg leading-6 font-medium text-gray-900">Monitoring Tools</h3>
+        <div class="mt-4 flex flex-wrap gap-3">
+          <% sidekiq_path = Rails.env.development? ? "/sidekiq" : "/admin/sidekiq" %>
+          <%= link_to sidekiq_path, target: "_blank",
+              class: "inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700" do %>
+            Sidekiq Dashboard
+          <% end %>
+          <%= link_to admin_dashboard_path,
+              class: "inline-flex items-center px-3 py-2 border border-gray-300 text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50" do %>
+            Back to Dashboard
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

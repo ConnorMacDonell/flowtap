@@ -1,0 +1,41 @@
+<h2>Your trial ends in <%= @days_remaining %> days</h2>
+
+<p>Hello <%= @user.first_name || @user.email %>,</p>
+
+<p>We hope you've been enjoying your experience with <%= @application_name %>! This is a friendly reminder that your trial period ends in <strong><%= @days_remaining %> days</strong>.</p>
+
+<div class="highlight-box">
+  <p><strong>Trial Status</strong></p>
+  <p>Days remaining: <strong><%= @days_remaining %></strong></p>
+  <p>Trial ends: <%= (@user.created_at + 30.days).strftime("%B %d, %Y") %></p>
+</div>
+
+<h2>Don't lose access to your work!</h2>
+
+<p>To continue using <%= @application_name %> after your trial ends, choose a subscription plan that fits your needs:</p>
+
+<p><strong>📊 Standard Plan - $19/month</strong></p>
+<ul>
+  <li>Up to 25 projects</li>
+  <li>Priority email support</li>
+  <li>Advanced analytics</li>
+</ul>
+
+<p><strong>💎 Premium Plan - $49/month</strong></p>
+<ul>
+  <li>Unlimited projects</li>
+  <li>24/7 support</li>
+  <li>Custom integrations</li>
+  <li>White-label options</li>
+</ul>
+
+<p style="text-align: center;">
+  <a href="<%= @subscription_url %>" class="btn">Choose Your Plan</a>
+</p>
+
+<p><strong>Questions about pricing or features?</strong></p>
+<p>Our team is here to help you find the perfect plan for your needs. Don't hesitate to reach out!</p>
+
+<p>Thank you for trying <%= @application_name %>. We're excited to continue supporting your success!</p>
+
+<p>Best regards,<br>The <%= @application_name %> Team</p>

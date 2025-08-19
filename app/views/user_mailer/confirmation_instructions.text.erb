@@ -1,0 +1,20 @@
+Please confirm your email address
+
+Hello <%= @user.first_name || @user.email %>,
+
+Thank you for creating an account with <%= @application_name %>! To complete your registration and access your account, please confirm your email address.
+
+Almost there! Just one more step to activate your account and start using our platform.
+
+Confirm your email: <%= @confirmation_url %>
+
+Important: This confirmation link will expire in 24 hours for security reasons.
+
+If you didn't create an account with us, you can safely ignore this email.
+
+Welcome aboard!
+The <%= @application_name %> Team
+
+--
+<%= @application_name %>
+<%= @support_email %>

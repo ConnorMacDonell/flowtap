@@ -1,0 +1,40 @@
+<h2>Your account has been deleted</h2>
+
+<p>Hello <%= @user_name %>,</p>
+
+<p>We're sorry to see you go! Your <%= @application_name %> account has been successfully deleted as requested.</p>
+
+<div class="highlight-box">
+  <p><strong>Account Deletion Details</strong></p>
+  <p>Account: <%= @user_email %></p>
+  <p>Deleted on: <%= @deletion_date.strftime("%B %d, %Y at %I:%M %p") %></p>
+  <p>Recovery deadline: <%= @recovery_deadline.strftime("%B %d, %Y") %></p>
+</div>
+
+<h2>Important Information</h2>
+
+<p><strong>Data Retention (30 days):</strong></p>
+<ul>
+  <li>Your account data will be retained for 30 days in case you change your mind</li>
+  <li>During this period, you can contact support to restore your account</li>
+  <li>After 30 days, all data will be permanently deleted and cannot be recovered</li>
+</ul>
+
+<p><strong>What happens next:</strong></p>
+<ul>
+  <li>Your login access has been immediately disabled</li>
+  <li>Active subscriptions have been canceled</li>
+  <li>You will not receive any further marketing emails</li>
+  <li>All personal data will be permanently removed after the 30-day period</li>
+</ul>
+
+<p><strong>Want to restore your account?</strong></p>
+<p>If you change your mind within the next 30 days, please contact our support team and we'll be happy to restore your account with all your data intact.</p>
+
+<p style="text-align: center;">
+  <a href="mailto:<%= @support_email %>" class="btn">Contact Support</a>
+</p>
+
+<p>Thank you for being part of our community. We hope to see you again in the future!</p>
+
+<p>Best wishes,<br>The <%= @application_name %> Team</p>

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html class="h-full bg-gray-50">
+  <head>
+    <title>Admin Login - SaaS Template</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+
+    <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
+    <%= javascript_importmap_tags %>
+  </head>
+
+  <body class="h-full">
+    <div class="flex min-h-full flex-col justify-center py-12 sm:px-6 lg:px-8">
+      <div class="sm:mx-auto sm:w-full sm:max-w-md">
+        <h2 class="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
+          🏗️ Admin Access
+        </h2>
+      </div>
+
+      <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div class="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+          <!-- Flash messages -->
+          <% if notice %>
+            <div class="mb-4 rounded-md bg-green-50 p-4">
+              <div class="text-sm font-medium text-green-800"><%= notice %></div>
+            </div>
+          <% end %>
+          
+          <% if alert %>
+            <div class="mb-4 rounded-md bg-red-50 p-4">
+              <div class="text-sm font-medium text-red-800"><%= alert %></div>
+            </div>
+          <% end %>
+
+          <%= yield %>
+          
+          <div class="mt-6 text-center">
+            <%= link_to "← Back to main site", root_path, class: "text-sm text-gray-600 hover:text-gray-900" %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

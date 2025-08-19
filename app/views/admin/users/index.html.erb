@@ -1,0 +1,179 @@
+<div class="px-4 sm:px-6 lg:px-8">
+  <!-- Page header -->
+  <div class="sm:flex sm:items-center">
+    <div class="sm:flex-auto">
+      <h1 class="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">Users</h1>
+      <p class="mt-2 text-sm text-gray-700">
+        Manage all registered users, their verification status, and subscriptions.
+      </p>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-4">
+    <div class="bg-white overflow-hidden shadow rounded-lg">
+      <div class="p-5">
+        <div class="flex items-center">
+          <div class="w-0 flex-1">
+            <dl>
+              <dt class="text-sm font-medium text-gray-500 truncate">Total Users</dt>
+              <dd class="text-lg font-medium text-gray-900"><%= @stats[:total] %></dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white overflow-hidden shadow rounded-lg">
+      <div class="p-5">
+        <div class="flex items-center">
+          <div class="w-0 flex-1">
+            <dl>
+              <dt class="text-sm font-medium text-gray-500 truncate">Verified</dt>
+              <dd class="text-lg font-medium text-green-600"><%= @stats[:verified] %></dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white overflow-hidden shadow rounded-lg">
+      <div class="p-5">
+        <div class="flex items-center">
+          <div class="w-0 flex-1">
+            <dl>
+              <dt class="text-sm font-medium text-gray-500 truncate">Unverified</dt>
+              <dd class="text-lg font-medium text-yellow-600"><%= @stats[:unverified] %></dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white overflow-hidden shadow rounded-lg">
+      <div class="p-5">
+        <div class="flex items-center">
+          <div class="w-0 flex-1">
+            <dl>
+              <dt class="text-sm font-medium text-gray-500 truncate">Suspended</dt>
+              <dd class="text-lg font-medium text-red-600"><%= @stats[:deleted] %></dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="mt-6 bg-white shadow rounded-lg">
+    <div class="p-6">
+      <%= form_with url: admin_users_path, method: :get, local: true, class: "space-y-4 sm:space-y-0 sm:grid sm:grid-cols-4 sm:gap-4" do |f| %>
+        <div>
+          <%= f.text_field :q, value: params[:q], 
+              placeholder: "Search users...",
+              class: "block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" %>
+        </div>
+
+        <div>
+          <%= f.select :verified, 
+              options_for_select([
+                ['All Users', ''],
+                ['Verified Only', 'true'],
+                ['Unverified Only', 'false']
+              ], params[:verified]),
+              {},
+              { class: "block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" } %>
+        </div>
+
+        <div>
+          <%= f.select :subscription, 
+              options_for_select([
+                ['All Tiers', ''],
+                ['Free', 'free'],
+                ['Standard', 'standard'],
+                ['Premium', 'premium']
+              ], params[:subscription]),
+              {},
+              { class: "block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" } %>
+        </div>
+
+        <div class="flex space-x-2">
+          <%= f.submit "Filter", class: "inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700" %>
+          <%= link_to "Clear", admin_users_path, class: "inline-flex justify-center rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50" %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Users table -->
+  <div class="mt-6 bg-white shadow overflow-hidden sm:rounded-md">
+    <% if @users.any? %>
+      <ul role="list" class="divide-y divide-gray-200">
+        <% @users.each do |user| %>
+          <li>
+            <div class="px-4 py-4 sm:px-6">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <div class="flex-shrink-0">
+                    <div class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+                      <span class="text-sm font-medium text-gray-700"><%= user.initials %></span>
+                    </div>
+                  </div>
+                  <div class="ml-4">
+                    <div class="flex items-center">
+                      <p class="text-sm font-medium text-indigo-600 truncate">
+                        <%= link_to (user.full_name.present? ? user.full_name : user.email), admin_user_path(user) %>
+                      </p>
+                      <div class="ml-2 flex-shrink-0 flex">
+                        <% if user.confirmed_at.present? %>
+                          <p class="inline-flex px-2 py-0 text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                            Verified
+                          </p>
+                        <% else %>
+                          <p class="inline-flex px-2 py-0 text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                            Unverified
+                          </p>
+                        <% end %>
+                        
+                        <% if user.deleted_at.present? %>
+                          <p class="ml-1 inline-flex px-2 py-0 text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                            Suspended
+                          </p>
+                        <% end %>
+                      </div>
+                    </div>
+                    <p class="text-sm text-gray-500 truncate"><%= user.email %></p>
+                  </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                  <div class="text-right">
+                    <p class="text-sm text-gray-900">
+                      <%= user.subscription&.status&.humanize || 'Free' %>
+                    </p>
+                    <p class="text-sm text-gray-500">
+                      Joined <%= user.created_at.strftime("%b %d, %Y") %>
+                    </p>
+                  </div>
+                  <div class="flex space-x-2">
+                    <%= link_to admin_user_path(user), class: "text-indigo-600 hover:text-indigo-900 text-sm font-medium" do %>
+                      View
+                    <% end %>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </li>
+        <% end %>
+      </ul>
+      
+      <!-- Pagination -->
+      <div class="bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
+        <%= paginate @users if respond_to?(:paginate) %>
+      </div>
+    <% else %>
+      <div class="text-center py-12">
+        <p class="text-sm text-gray-500">No users found matching your criteria.</p>
+      </div>
+    <% end %>
+  </div>
+</div>

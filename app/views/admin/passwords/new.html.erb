@@ -1,0 +1,26 @@
+<h3 class="text-lg font-medium leading-6 text-gray-900 mb-4">Reset your password</h3>
+
+<%= form_for(resource, as: resource_name, url: password_path(resource_name), html: { method: :post }) do |f| %>
+  <%= render "admin/shared/error_messages", resource: resource %>
+
+  <div class="space-y-6">
+    <div>
+      <%= f.label :email, class: "block text-sm font-medium text-gray-700" %>
+      <div class="mt-1">
+        <%= f.email_field :email, autofocus: true, autocomplete: "email", 
+            class: "block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" %>
+      </div>
+      <p class="mt-2 text-sm text-gray-500">
+        We'll send you a link to reset your password.
+      </p>
+    </div>
+
+    <div>
+      <%= f.submit "Send reset instructions", class: "flex w-full justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2" %>
+    </div>
+
+    <div class="text-center">
+      <%= link_to "Back to sign in", new_admin_user_session_path, class: "text-sm text-indigo-600 hover:text-indigo-500" %>
+    </div>
+  </div>
+<% end %>

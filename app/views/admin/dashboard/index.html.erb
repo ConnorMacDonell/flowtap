@@ -1,0 +1,200 @@
+<div class="px-4 sm:px-6 lg:px-8">
+  <!-- Page header -->
+  <div class="md:flex md:items-center md:justify-between">
+    <div class="min-w-0 flex-1">
+      <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
+        Dashboard
+      </h2>
+      <p class="mt-1 text-sm text-gray-500">
+        Welcome back, <%= current_admin_user.display_name %>! Here's what's happening with your application.
+      </p>
+    </div>
+  </div>
+
+  <!-- Stats overview -->
+  <div class="mt-8">
+    <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      <!-- Total Users -->
+      <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
+        <dt class="truncate text-sm font-medium text-gray-500">Total Users</dt>
+        <dd class="mt-1 text-3xl font-semibold tracking-tight text-gray-900"><%= @total_users %></dd>
+        <div class="mt-2 flex items-center text-sm">
+          <span class="text-green-600 font-medium">+<%= @new_users_this_month %></span>
+          <span class="ml-1 text-gray-500">this month</span>
+        </div>
+      </div>
+
+      <!-- Verified Users -->
+      <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
+        <dt class="truncate text-sm font-medium text-gray-500">Verified Users</dt>
+        <dd class="mt-1 text-3xl font-semibold tracking-tight text-gray-900"><%= @verified_users %></dd>
+        <div class="mt-2 flex items-center text-sm">
+          <% verification_rate = @total_users > 0 ? (@verified_users.to_f / @total_users * 100).round(1) : 0 %>
+          <span class="<%= verification_rate > 80 ? 'text-green-600' : 'text-yellow-600' %> font-medium">
+            <%= verification_rate %>%
+          </span>
+          <span class="ml-1 text-gray-500">verification rate</span>
+        </div>
+      </div>
+
+      <!-- Free Tier Users -->
+      <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
+        <dt class="truncate text-sm font-medium text-gray-500">Free Tier</dt>
+        <dd class="mt-1 text-3xl font-semibold tracking-tight text-gray-900"><%= @subscription_stats[:free] %></dd>
+        <div class="mt-2 flex items-center text-sm">
+          <% free_rate = @total_users > 0 ? (@subscription_stats[:free].to_f / @total_users * 100).round(1) : 0 %>
+          <span class="text-blue-600 font-medium"><%= free_rate %>%</span>
+          <span class="ml-1 text-gray-500">of all users</span>
+        </div>
+      </div>
+
+      <!-- System Health -->
+      <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
+        <dt class="truncate text-sm font-medium text-gray-500">System Health</dt>
+        <dd class="mt-1 text-3xl font-semibold tracking-tight">
+          <% if @system_health[:database] && @system_health[:redis] %>
+            <span class="text-green-600">Healthy</span>
+          <% else %>
+            <span class="text-red-600">Issues</span>
+          <% end %>
+        </dd>
+        <div class="mt-2 flex items-center text-sm">
+          <div class="flex space-x-2">
+            <span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium <%= @system_health[:database] ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700' %>">
+              DB
+            </span>
+            <span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium <%= @system_health[:redis] ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700' %>">
+              Redis
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts and Recent Activity -->
+  <div class="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-2">
+    <!-- Weekly Signups Chart -->
+    <div class="overflow-hidden rounded-lg bg-white shadow">
+      <div class="p-6">
+        <h3 class="text-base font-semibold leading-6 text-gray-900">Weekly Signups</h3>
+        <p class="mt-2 text-sm text-gray-700">User registration trend over the last 8 weeks</p>
+        
+        <div class="mt-6">
+          <div class="flex items-end space-x-2 h-40">
+            <% max_count = @weekly_signups.map { |w| w[:count] }.max %>
+            <% max_count = 1 if max_count == 0 %>
+            <% @weekly_signups.each do |week| %>
+              <div class="flex flex-col items-center flex-1">
+                <div class="w-full bg-blue-200 rounded-t" 
+                     style="height: <%= (week[:count].to_f / max_count * 100).round %>%">
+                  <div class="w-full h-full bg-blue-500 rounded-t flex items-end justify-center">
+                    <span class="text-xs text-white pb-1"><%= week[:count] %></span>
+                  </div>
+                </div>
+                <span class="text-xs text-gray-500 mt-1"><%= week[:week] %></span>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Signups -->
+    <div class="overflow-hidden rounded-lg bg-white shadow">
+      <div class="p-6">
+        <h3 class="text-base font-semibold leading-6 text-gray-900">Recent Signups</h3>
+        <p class="mt-2 text-sm text-gray-700">Latest user registrations</p>
+        
+        <div class="mt-6">
+          <% if @recent_signups.any? %>
+            <ul role="list" class="space-y-3">
+              <% @recent_signups.each do |user| %>
+                <li class="flex items-center justify-between">
+                  <div class="flex items-center">
+                    <div class="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
+                      <span class="text-sm font-medium text-gray-700"><%= user.initials %></span>
+                    </div>
+                    <div class="ml-3">
+                      <p class="text-sm font-medium text-gray-900">
+                        <%= user.full_name.present? ? user.full_name : user.email %>
+                      </p>
+                      <p class="text-xs text-gray-500"><%= user.email unless user.full_name.present? %></p>
+                    </div>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <% if user.confirmed_at.present? %>
+                      <span class="inline-flex items-center rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-700">
+                        Verified
+                      </span>
+                    <% else %>
+                      <span class="inline-flex items-center rounded-full bg-yellow-100 px-2 py-1 text-xs font-medium text-yellow-700">
+                        Pending
+                      </span>
+                    <% end %>
+                    <span class="text-xs text-gray-500">
+                      <%= time_ago_in_words(user.created_at) %> ago
+                    </span>
+                  </div>
+                </li>
+              <% end %>
+            </ul>
+          <% else %>
+            <p class="text-sm text-gray-500">No recent signups</p>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- System Stats -->
+  <div class="mt-8">
+    <div class="overflow-hidden rounded-lg bg-white shadow">
+      <div class="p-6">
+        <h3 class="text-base font-semibold leading-6 text-gray-900">Sidekiq Job Stats</h3>
+        <p class="mt-2 text-sm text-gray-700">Background job processing statistics</p>
+        
+        <dl class="mt-6 grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-3">
+          <div>
+            <dt class="text-sm font-medium text-gray-500">Processed</dt>
+            <dd class="mt-1 text-2xl font-semibold text-gray-900"><%= number_with_delimiter(@system_health[:sidekiq_queues][:total]) %></dd>
+          </div>
+          <div>
+            <dt class="text-sm font-medium text-gray-500">Enqueued</dt>
+            <dd class="mt-1 text-2xl font-semibold text-gray-900"><%= @system_health[:sidekiq_queues][:enqueued] %></dd>
+          </div>
+          <div>
+            <dt class="text-sm font-medium text-gray-500">Failed</dt>
+            <dd class="mt-1 text-2xl font-semibold <%= @system_health[:sidekiq_queues][:failed] > 0 ? 'text-red-600' : 'text-gray-900' %>">
+              <%= @system_health[:sidekiq_queues][:failed] %>
+            </dd>
+          </div>
+        </dl>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="mt-8">
+    <div class="overflow-hidden rounded-lg bg-white shadow">
+      <div class="p-6">
+        <h3 class="text-base font-semibold leading-6 text-gray-900">Quick Actions</h3>
+        <div class="mt-4 flex flex-wrap gap-3">
+          <%= link_to admin_users_path, 
+              class: "inline-flex items-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500" do %>
+            Manage Users
+          <% end %>
+          <%= link_to admin_system_path, 
+              class: "inline-flex items-center rounded-md bg-gray-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-gray-500" do %>
+            System Health
+          <% end %>
+          <% sidekiq_path = Rails.env.development? ? "/sidekiq" : "/admin/sidekiq" %>
+          <%= link_to sidekiq_path, target: "_blank",
+              class: "inline-flex items-center rounded-md bg-green-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-500" do %>
+            Sidekiq Dashboard
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

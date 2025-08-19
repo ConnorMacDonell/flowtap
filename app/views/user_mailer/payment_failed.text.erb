@@ -1,0 +1,30 @@
+Payment failed - Action required
+
+Hello <%= @user.first_name || @user.email %>,
+
+We were unable to process your recent payment for your <%= @application_name %> subscription. Your account is still active, but action is required to avoid service interruption.
+
+Payment Failed: We'll retry charging your payment method in 3 days. Please update your billing information if needed.
+
+What you need to do:
+1. Check that your payment method is valid and has sufficient funds
+2. Update your billing information if necessary
+3. Contact your bank if you believe this is an error
+
+Update your billing information: <%= @subscription_url %>
+
+<% if @invoice_url %>
+View failed invoice: <%= @invoice_url %>
+<% end %>
+
+Need help?
+If you're experiencing issues with your payment or need assistance updating your billing information, our support team is here to help.
+
+We appreciate your business and want to ensure uninterrupted access to your account.
+
+Best regards,
+The <%= @application_name %> Billing Team
+
+--
+<%= @application_name %>
+<%= @support_email %>

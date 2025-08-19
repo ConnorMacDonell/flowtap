@@ -1,0 +1,27 @@
+<h2>Your email address has been changed</h2>
+
+<p>Hello <%= @user.first_name || 'there' %>,</p>
+
+<p>This is a confirmation that the email address associated with your <%= @application_name %> account has been successfully updated.</p>
+
+<div class="highlight-box">
+  <p><strong>Email Address Updated</strong></p>
+  <p>Your new email address: <strong><%= @new_email %></strong></p>
+  <p>Changed on: <%= Date.current.strftime("%B %d, %Y at %I:%M %p") %></p>
+</div>
+
+<p><strong>What this means:</strong></p>
+<ul>
+  <li>All future account notifications will be sent to your new email address</li>
+  <li>You'll use this new email address to sign in to your account</li>
+  <li>Your account data and subscription remain unchanged</li>
+</ul>
+
+<p><strong>If you didn't make this change:</strong></p>
+<p>Please contact our support team immediately if you did not request this email change. Your account security is important to us.</p>
+
+<p style="text-align: center;">
+  <a href="mailto:<%= @support_email %>" class="btn">Contact Support</a>
+</p>
+
+<p>Best regards,<br>The <%= @application_name %> Security Team</p>

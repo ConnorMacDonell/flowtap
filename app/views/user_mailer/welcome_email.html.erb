@@ -1,0 +1,24 @@
+<h2>Welcome to <%= @application_name %>, <%= @user.first_name || @user.email %>! 🎉</h2>
+
+<p>Thank you for joining our community! We're excited to have you on board and can't wait to see what you'll accomplish with our platform.</p>
+
+<div class="highlight-box">
+  <p><strong>Your account is ready to go!</strong></p>
+  <p>You can now access your dashboard and start exploring all the features we have to offer.</p>
+</div>
+
+<p>Here's what you can do next:</p>
+<ul>
+  <li><strong>Complete your profile</strong> - Add your details and preferences</li>
+  <li><strong>Explore the dashboard</strong> - Get familiar with the interface</li>
+  <li><strong>Check out our features</strong> - See what's available on your plan</li>
+  <li><strong>Upgrade your plan</strong> - Unlock additional features when ready</li>
+</ul>
+
+<p style="text-align: center;">
+  <a href="<%= @dashboard_url %>" class="btn">Go to Dashboard</a>
+</p>
+
+<p>If you have any questions or need assistance, don't hesitate to reach out to our support team. We're here to help you succeed!</p>
+
+<p>Best regards,<br>The <%= @application_name %> Team</p>

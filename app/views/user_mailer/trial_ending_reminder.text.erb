@@ -1,0 +1,38 @@
+Your trial ends in <%= @days_remaining %> days
+
+Hello <%= @user.first_name || @user.email %>,
+
+We hope you've been enjoying your experience with <%= @application_name %>! This is a friendly reminder that your trial period ends in <%= @days_remaining %> days.
+
+Trial Status:
+Days remaining: <%= @days_remaining %>
+Trial ends: <%= (@user.created_at + 30.days).strftime("%B %d, %Y") %>
+
+Don't lose access to your work!
+
+To continue using <%= @application_name %> after your trial ends, choose a subscription plan that fits your needs:
+
+Standard Plan - $19/month:
+• Up to 25 projects
+• Priority email support
+• Advanced analytics
+
+Premium Plan - $49/month:
+• Unlimited projects
+• 24/7 support
+• Custom integrations
+• White-label options
+
+Choose Your Plan: <%= @subscription_url %>
+
+Questions about pricing or features?
+Our team is here to help you find the perfect plan for your needs. Don't hesitate to reach out!
+
+Thank you for trying <%= @application_name %>. We're excited to continue supporting your success!
+
+Best regards,
+The <%= @application_name %> Team
+
+--
+<%= @application_name %>
+<%= @support_email %>

@@ -1,0 +1,248 @@
+<div class="px-4 sm:px-6 lg:px-8">
+  <!-- Page header -->
+  <div class="md:flex md:items-center md:justify-between">
+    <div class="min-w-0 flex-1">
+      <nav class="flex" aria-label="Breadcrumb">
+        <ol role="list" class="flex items-center space-x-4">
+          <li>
+            <%= link_to admin_users_path, class: "text-gray-400 hover:text-gray-500" do %>
+              <span>Users</span>
+            <% end %>
+          </li>
+          <li>
+            <div class="flex items-center">
+              <svg class="flex-shrink-0 h-5 w-5 text-gray-300" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                <path d="M5.555 17.776l8-16 .894.448-8 16-.894-.448z" />
+              </svg>
+              <span class="ml-4 text-sm font-medium text-gray-500 truncate">
+                <%= @user.full_name.present? ? @user.full_name : @user.email %>
+              </span>
+            </div>
+          </li>
+        </ol>
+      </nav>
+      
+      <div class="mt-2 flex items-center space-x-4">
+        <div class="h-16 w-16 rounded-full bg-gray-200 flex items-center justify-center">
+          <span class="text-xl font-medium text-gray-700"><%= @user.initials %></span>
+        </div>
+        <div>
+          <h1 class="text-2xl font-bold leading-7 text-gray-900">
+            <%= @user.full_name.present? ? @user.full_name : @user.email %>
+          </h1>
+          <p class="text-sm text-gray-500"><%= @user.email %></p>
+        </div>
+        <div class="flex space-x-2">
+          <% if @user.confirmed_at.present? %>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+              Verified
+            </span>
+          <% else %>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+              Unverified
+            </span>
+          <% end %>
+          
+          <% if @user.deleted_at.present? %>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+              Suspended
+            </span>
+          <% end %>
+        </div>
+      </div>
+    </div>
+    <div class="mt-4 flex md:mt-0 md:ml-4 space-x-3">
+      <% unless @user.deleted_at.present? %>
+        <%= link_to impersonate_admin_user_path(@user), method: :post,
+            class: "inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50",
+            data: { confirm: "Are you sure you want to impersonate this user? You will be logged in as them." } do %>
+          Impersonate
+        <% end %>
+      <% end %>
+      
+      <%= link_to edit_admin_user_path(@user),
+          class: "inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700" do %>
+        Edit User
+      <% end %>
+    </div>
+  </div>
+
+  <div class="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
+    <!-- Main content -->
+    <div class="lg:col-span-2 space-y-6">
+      <!-- User Details -->
+      <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+        <div class="px-4 py-5 sm:px-6">
+          <h3 class="text-lg leading-6 font-medium text-gray-900">User Information</h3>
+          <p class="mt-1 max-w-2xl text-sm text-gray-500">Personal details and account information.</p>
+        </div>
+        <div class="border-t border-gray-200 px-4 py-5 sm:px-6">
+          <dl class="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
+            <div>
+              <dt class="text-sm font-medium text-gray-500">Full name</dt>
+              <dd class="mt-1 text-sm text-gray-900">
+                <%= [@user.first_name, @user.last_name].compact.join(' ').presence || 'Not provided' %>
+              </dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">Email address</dt>
+              <dd class="mt-1 text-sm text-gray-900"><%= @user.email %></dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">Timezone</dt>
+              <dd class="mt-1 text-sm text-gray-900"><%= @user.timezone || 'UTC' %></dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">Marketing emails</dt>
+              <dd class="mt-1 text-sm text-gray-900">
+                <%= @user.marketing_emails? ? 'Enabled' : 'Disabled' %>
+              </dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">Member since</dt>
+              <dd class="mt-1 text-sm text-gray-900">
+                <%= @user.created_at.strftime("%B %d, %Y at %I:%M %p") %>
+              </dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">Last sign in</dt>
+              <dd class="mt-1 text-sm text-gray-900">
+                <% if @user.last_sign_in_at %>
+                  <%= @user.last_sign_in_at.strftime("%B %d, %Y at %I:%M %p") %>
+                <% else %>
+                  Never
+                <% end %>
+              </dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">Email confirmed</dt>
+              <dd class="mt-1 text-sm text-gray-900">
+                <% if @user.confirmed_at %>
+                  <%= @user.confirmed_at.strftime("%B %d, %Y at %I:%M %p") %>
+                <% else %>
+                  <span class="text-red-600">Not confirmed</span>
+                <% end %>
+              </dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">Sign in count</dt>
+              <dd class="mt-1 text-sm text-gray-900"><%= @user.sign_in_count %></dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+
+      <!-- Subscription Information -->
+      <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+        <div class="px-4 py-5 sm:px-6">
+          <h3 class="text-lg leading-6 font-medium text-gray-900">Subscription</h3>
+          <p class="mt-1 max-w-2xl text-sm text-gray-500">Current subscription tier and billing information.</p>
+        </div>
+        <div class="border-t border-gray-200 px-4 py-5 sm:px-6">
+          <% if @user.subscription %>
+            <dl class="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
+              <div>
+                <dt class="text-sm font-medium text-gray-500">Current tier</dt>
+                <dd class="mt-1 text-sm">
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    <%= @user.subscription.status.humanize %>
+                  </span>
+                </dd>
+              </div>
+              <div>
+                <dt class="text-sm font-medium text-gray-500">Status</dt>
+                <dd class="mt-1 text-sm text-gray-900">Active</dd>
+              </div>
+              <div>
+                <dt class="text-sm font-medium text-gray-500">Stripe Customer ID</dt>
+                <dd class="mt-1 text-sm text-gray-900">
+                  <%= @user.stripe_customer_id || 'Not set' %>
+                </dd>
+              </div>
+              <div>
+                <dt class="text-sm font-medium text-gray-500">Created</dt>
+                <dd class="mt-1 text-sm text-gray-900">
+                  <%= @user.subscription.created_at.strftime("%B %d, %Y") %>
+                </dd>
+              </div>
+            </dl>
+          <% else %>
+            <p class="text-sm text-gray-500">No subscription found.</p>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="space-y-6">
+      <!-- Actions -->
+      <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+        <div class="px-4 py-5 sm:px-6">
+          <h3 class="text-lg leading-6 font-medium text-gray-900">Actions</h3>
+        </div>
+        <div class="border-t border-gray-200">
+          <ul role="list" class="divide-y divide-gray-200">
+            <% unless @user.confirmed_at.present? %>
+              <li class="px-4 py-4">
+                <%= link_to verify_admin_user_path(@user), method: :patch,
+                    class: "text-sm font-medium text-green-600 hover:text-green-500",
+                    data: { confirm: "Are you sure you want to manually verify this user?" } do %>
+                  ✓ Manually Verify Email
+                <% end %>
+              </li>
+            <% end %>
+            
+            <% if @user.deleted_at.present? %>
+              <li class="px-4 py-4">
+                <%= link_to unsuspend_admin_user_path(@user), method: :patch,
+                    class: "text-sm font-medium text-green-600 hover:text-green-500",
+                    data: { confirm: "Are you sure you want to unsuspend this user?" } do %>
+                  ↗ Unsuspend User
+                <% end %>
+              </li>
+            <% else %>
+              <li class="px-4 py-4">
+                <%= link_to suspend_admin_user_path(@user), method: :patch,
+                    class: "text-sm font-medium text-red-600 hover:text-red-500",
+                    data: { confirm: "Are you sure you want to suspend this user? They will not be able to sign in." } do %>
+                  ⊘ Suspend User
+                <% end %>
+              </li>
+            <% end %>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Quick Stats -->
+      <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+        <div class="px-4 py-5 sm:px-6">
+          <h3 class="text-lg leading-6 font-medium text-gray-900">Quick Stats</h3>
+        </div>
+        <div class="border-t border-gray-200 px-4 py-5 sm:px-6">
+          <dl class="space-y-4">
+            <div>
+              <dt class="text-sm font-medium text-gray-500">Account age</dt>
+              <dd class="mt-1 text-sm text-gray-900">
+                <%= time_ago_in_words(@user.created_at) %>
+              </dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">Last activity</dt>
+              <dd class="mt-1 text-sm text-gray-900">
+                <% if @user.last_sign_in_at %>
+                  <%= time_ago_in_words(@user.last_sign_in_at) %> ago
+                <% else %>
+                  Never signed in
+                <% end %>
+              </dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">Total logins</dt>
+              <dd class="mt-1 text-sm text-gray-900"><%= @user.sign_in_count %></dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,25 @@
+<h2>Please confirm your email address</h2>
+
+<p>Hello <%= @user.first_name || @user.email %>,</p>
+
+<p>Thank you for creating an account with <%= @application_name %>! To complete your registration and access your account, please confirm your email address.</p>
+
+<div class="highlight-box">
+  <p><strong>Almost there!</strong></p>
+  <p>Just one more step to activate your account and start using our platform.</p>
+</div>
+
+<p style="text-align: center;">
+  <a href="<%= @confirmation_url %>" class="btn">Confirm My Email</a>
+</p>
+
+<p>If the button above doesn't work, you can copy and paste this link into your browser:</p>
+<p style="word-break: break-all; font-family: monospace; background-color: #f3f4f6; padding: 10px; border-radius: 4px;">
+  <%= @confirmation_url %>
+</p>
+
+<p><strong>Important:</strong> This confirmation link will expire in 24 hours for security reasons.</p>
+
+<p>If you didn't create an account with us, you can safely ignore this email.</p>
+
+<p>Welcome aboard!<br>The <%= @application_name %> Team</p>

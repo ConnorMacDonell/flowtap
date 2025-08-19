@@ -1,0 +1,45 @@
+<h2>Your subscription has been updated!</h2>
+
+<p>Hello <%= @user.first_name || @user.email %>,</p>
+
+<p>Great news! Your <%= @application_name %> subscription has been successfully updated.</p>
+
+<div class="highlight-box">
+  <p><strong>Subscription Change Details</strong></p>
+  <p>Previous plan: <strong><%= @old_tier.titleize %></strong></p>
+  <p>New plan: <strong><%= @new_tier.titleize %></strong></p>
+  <p>Updated on: <%= Date.current.strftime("%B %d, %Y") %></p>
+</div>
+
+<% if @new_tier == 'standard' %>
+  <h2>Welcome to Standard! 🚀</h2>
+  <p>You now have access to:</p>
+  <ul>
+    <li>Priority email support</li>
+    <li>Up to 25 projects</li>
+    <li>Advanced analytics and reporting</li>
+    <li>Enhanced security features</li>
+  </ul>
+<% elsif @new_tier == 'premium' %>
+  <h2>Welcome to Premium! 💎</h2>
+  <p>You now have access to:</p>
+  <ul>
+    <li>24/7 priority support via chat and email</li>
+    <li>Unlimited projects</li>
+    <li>Custom integrations and API access</li>
+    <li>Advanced analytics and white-label options</li>
+  </ul>
+<% else %>
+  <h2>Thanks for staying with us!</h2>
+  <p>Your plan change has been processed successfully.</p>
+<% end %>
+
+<p style="text-align: center;">
+  <a href="<%= @subscription_url %>" class="btn">View Subscription Details</a>
+</p>
+
+<p>Your new features are available immediately. If you have any questions about your updated plan or need help getting started with new features, our support team is here to help!</p>
+
+<p>Thank you for choosing <%= @application_name %>!</p>
+
+<p>Best regards,<br>The <%= @application_name %> Team</p>

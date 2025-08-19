@@ -1,0 +1,26 @@
+Your email address has been changed
+
+Hello <%= @user.first_name || 'there' %>,
+
+This is a confirmation that the email address associated with your <%= @application_name %> account has been successfully updated.
+
+Email Address Updated:
+New email address: <%= @new_email %>
+Changed on: <%= Date.current.strftime("%B %d, %Y at %I:%M %p") %>
+
+What this means:
+• All future account notifications will be sent to your new email address
+• You'll use this new email address to sign in to your account  
+• Your account data and subscription remain unchanged
+
+If you didn't make this change:
+Please contact our support team immediately if you did not request this email change. Your account security is important to us.
+
+Contact Support: <%= @support_email %>
+
+Best regards,
+The <%= @application_name %> Security Team
+
+--
+<%= @application_name %>
+<%= @support_email %>

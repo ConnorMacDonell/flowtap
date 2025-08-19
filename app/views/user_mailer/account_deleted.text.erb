@@ -1,0 +1,37 @@
+Your account has been deleted
+
+Hello <%= @user_name %>,
+
+We're sorry to see you go! Your <%= @application_name %> account has been successfully deleted as requested.
+
+Account Deletion Details:
+Account: <%= @user_email %>
+Deleted on: <%= @deletion_date.strftime("%B %d, %Y at %I:%M %p") %>
+Recovery deadline: <%= @recovery_deadline.strftime("%B %d, %Y") %>
+
+Important Information
+
+Data Retention (30 days):
+• Your account data will be retained for 30 days in case you change your mind
+• During this period, you can contact support to restore your account
+• After 30 days, all data will be permanently deleted and cannot be recovered
+
+What happens next:
+• Your login access has been immediately disabled
+• Active subscriptions have been canceled
+• You will not receive any further marketing emails
+• All personal data will be permanently removed after the 30-day period
+
+Want to restore your account?
+If you change your mind within the next 30 days, please contact our support team and we'll be happy to restore your account with all your data intact.
+
+Contact Support: <%= @support_email %>
+
+Thank you for being part of our community. We hope to see you again in the future!
+
+Best wishes,
+The <%= @application_name %> Team
+
+--
+<%= @application_name %>
+<%= @support_email %>
