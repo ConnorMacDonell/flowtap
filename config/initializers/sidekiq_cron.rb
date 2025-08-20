@@ -1,5 +1,6 @@
 # Scheduled jobs configuration using sidekiq-cron
-if defined?(Sidekiq::Cron::Job) && ENV['REDIS_URL'].present?
+# Temporarily disabled due to Redis SSL issues on Heroku
+if false && defined?(Sidekiq::Cron::Job) && ENV['REDIS_URL'].present?
   # Only load scheduled jobs in production and staging environments
   if Rails.env.production? || Rails.env.staging?
     begin
