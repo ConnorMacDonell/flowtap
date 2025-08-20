@@ -74,7 +74,7 @@ Rails.application.configure do
 
   # Configure Action Mailer for production
   config.action_mailer.delivery_method = :smtp
-  config.action_mailer.default_url_options = { host: 'flowtap.herokuapp.com', protocol: 'https' }
+  config.action_mailer.default_url_options = { host: 'flowtap-production-5c240a9dea5a.herokuapp.com', protocol: 'https' }
   config.action_mailer.perform_deliveries = true
   config.action_mailer.raise_delivery_errors = true
 
