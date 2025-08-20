@@ -55,7 +55,7 @@ class SettingsController < ApplicationController
       account_created: @user.created_at,
       last_sign_in: @user.last_sign_in_at,
       total_sign_ins: @user.sign_in_count,
-      subscription: @user.subscription&.as_json(except: [:stripe_subscription_id]) if @user.respond_to?(:subscription),
+      subscription: (@user.respond_to?(:subscription) ? @user.subscription&.as_json(except: [:stripe_subscription_id]) : nil),
       exported_at: Time.current
     }
   end
