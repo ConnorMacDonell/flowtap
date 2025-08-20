@@ -2,6 +2,7 @@
 if defined?(Sidekiq::Cron::Job) && ENV['REDIS_URL'].present?
   # Only load scheduled jobs in production and staging environments
   if Rails.env.production? || Rails.env.staging?
+    begin
     
     # Daily metrics calculation at 1 AM
     Sidekiq::Cron::Job.load_from_hash({
@@ -63,8 +64,10 @@ if defined?(Sidekiq::Cron::Job) && ENV['REDIS_URL'].present?
       }
     })
     
-    Rails.logger.info "Loaded #{Sidekiq::Cron::Job.all.count} scheduled jobs"
-    
+      Rails.logger.info "Loaded #{Sidekiq::Cron::Job.all.count} scheduled jobs"
+    rescue => e
+      Rails.logger.error "Failed to load scheduled jobs: #{e.message}"
+    end
   else
     Rails.logger.info "Skipping scheduled jobs in #{Rails.env} environment"
   end
