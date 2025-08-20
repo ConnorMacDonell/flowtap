@@ -22,22 +22,24 @@ class StructuredLogFormatter < Logger::Formatter
 end
 
 # Apply structured logging in production
-if Rails.env.production?
-  Rails.logger.formatter = StructuredLogFormatter.new
-end
+# Temporarily disabled due to TaggedLogging conflicts
+# if Rails.env.production?
+#   Rails.logger.formatter = StructuredLogFormatter.new
+# end
 
 # Configure log rotation in production
-if Rails.env.production?
-  Rails.application.configure do
-    # Rotate logs daily, keep 7 days worth
-    config.logger = ActiveSupport::Logger.new(
-      Rails.root.join('log', 'production.log'),
-      1, # Keep 1 old log file
-      100.megabytes # Max size before rotation
-    )
-    config.logger.formatter = StructuredLogFormatter.new
-  end
-end
+# Temporarily disabled due to TaggedLogging conflicts
+# if Rails.env.production?
+#   Rails.application.configure do
+#     # Rotate logs daily, keep 7 days worth
+#     config.logger = ActiveSupport::Logger.new(
+#       Rails.root.join('log', 'production.log'),
+#       1, # Keep 1 old log file
+#       100.megabytes # Max size before rotation
+#     )
+#     config.logger.formatter = StructuredLogFormatter.new
+#   end
+# end
 
 # Add request ID tracking middleware
 Rails.application.config.middleware.insert_before(
