@@ -1,38 +1,38 @@
 <div class="bg-white">
   <!-- Hero section -->
-  <div class="relative isolate px-6 pt-14 lg:px-8">
-    <div class="mx-auto max-w-2xl py-32 sm:py-48 lg:py-56">
+  <div class="relative isolate px-6 pt-14 pb-24 lg:px-8 lg:pb-32">
+    <div class="mx-auto max-w-2xl py-16 sm:py-24 lg:py-32">
       <div class="text-center">
         <h1 class="text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl">
-          Launch your SaaS in days, not months
+          Get back 5+ hours every month
         </h1>
         <p class="mt-6 text-lg leading-8 text-gray-600">
-          A complete Ruby on Rails template with authentication, subscriptions, admin dashboard, and more. 
-          Focus on your unique features while we handle the boilerplate.
+          FlowTap automatically syncs your financial transactions from freelancing sites 
+          straight to QuickBooks Online. <strong>No more manual data entry. No more weekly accounting.</strong> 
+          Just set it once and watch your books update themselves.
         </p>
         <div class="mt-10 flex items-center justify-center gap-x-6">
-          <a href="#" class="rounded-md bg-blue-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">
-            Get started
-          </a>
-          <a href="#features" class="text-sm font-semibold leading-6 text-gray-900">
-            Learn more <span aria-hidden="true">→</span>
-          </a>
+          <% if user_signed_in? %>
+            <%= link_to "Go to Dashboard", dashboard_path, class: "rounded-md bg-blue-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600" %>
+          <% else %>
+            <%= link_to "Start Your Free Trial", new_user_registration_path, class: "rounded-md bg-blue-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600" %>
+          <% end %>
         </div>
       </div>
     </div>
   </div>
 
   <!-- Features section -->
-  <div id="features" class="py-24 sm:py-32">
+  <div id="features" class="py-24 sm:py-32 bg-gray-50">
     <div class="mx-auto max-w-7xl px-6 lg:px-8">
       <div class="mx-auto max-w-2xl lg:text-center">
-        <h2 class="text-base font-semibold leading-7 text-blue-600">Everything you need</h2>
+        <h2 class="text-base font-semibold leading-7 text-blue-600">The FlowTap difference</h2>
         <p class="mt-2 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-          Production-ready SaaS features
+          Your accounting. Completely automated.
         </p>
         <p class="mt-6 text-lg leading-8 text-gray-600">
-          Built with modern Rails 7, PostgreSQL, and Tailwind CSS. Includes authentication, 
-          payments, admin tools, and deployment configuration.
+          Imagine never touching a spreadsheet for freelancer income again. Connect once, then watch 
+          FlowTap work its magic while you focus on what actually grows your business.
         </p>
       </div>
       <div class="mx-auto mt-16 max-w-2xl sm:mt-20 lg:mt-24 lg:max-w-4xl">
@@ -41,57 +41,56 @@
             <dt class="text-base font-semibold leading-7 text-gray-900">
               <div class="absolute left-0 top-0 flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600">
                 <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" />
                 </svg>
               </div>
-              User Authentication
+              Works with ALL your favorite platforms
             </dt>
             <dd class="mt-2 text-base leading-7 text-gray-600">
-              Complete authentication system with Devise. Registration, login, password reset, 
-              email verification, and profile management included.
+              Whatever freelancing platforms you use, FlowTap speaks their language. 
+              <strong>One setup connects everything</strong> – no juggling multiple tools or accounts.
             </dd>
           </div>
           <div class="relative pl-16">
             <dt class="text-base font-semibold leading-7 text-gray-900">
               <div class="absolute left-0 top-0 flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600">
                 <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
                 </svg>
               </div>
-              Stripe Payments
+              Set it once, forget it forever
             </dt>
             <dd class="mt-2 text-base leading-7 text-gray-600">
-              Ready-to-use Stripe integration with subscription management, 
-              webhooks, and customer portal. Multiple pricing tiers supported.
+              Choose daily, weekly, or monthly syncs – whatever works for your workflow. Then relax while 
+              FlowTap works in the background. <strong>No more "Oh crap, I forgot to update QuickBooks"</strong> moments.
             </dd>
           </div>
           <div class="relative pl-16">
             <dt class="text-base font-semibold leading-7 text-gray-900">
               <div class="absolute left-0 top-0 flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600">
                 <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6a7.5 7.5 0 107.5 7.5h-7.5V6z" />
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 10.5H21A7.5 7.5 0 0013.5 3v7.5z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
                 </svg>
               </div>
-              Admin Dashboard
+              Smart enough to catch your mistakes
             </dt>
             <dd class="mt-2 text-base leading-7 text-gray-600">
-              Comprehensive admin interface for user management, analytics, 
-              system monitoring, and support tools.
+              Our AI double-checks everything before it hits QuickBooks. Duplicate payments? Caught. 
+              Missing categories? Fixed. <strong>Your books stay clean</strong> without you lifting a finger.
             </dd>
           </div>
           <div class="relative pl-16">
             <dt class="text-base font-semibold leading-7 text-gray-900">
               <div class="absolute left-0 top-0 flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600">
                 <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0M3.124 7.5A8.969 8.969 0 015.292 3m13.416 0a8.969 8.969 0 012.168 4.5" />
                 </svg>
               </div>
-              Email System
+              Peace of mind, delivered daily
             </dt>
             <dd class="mt-2 text-base leading-7 text-gray-600">
-              Transactional emails via SendGrid with beautiful templates, 
-              background processing, and development preview tools.
+              Get a friendly "all done!" email after each sync, plus instant alerts if anything needs attention. 
+              <strong>Sleep better knowing your books are always current</strong> and tax-ready.
             </dd>
           </div>
         </dl>
@@ -99,108 +98,171 @@
     </div>
   </div>
 
+
   <!-- Pricing section -->
   <div class="bg-gray-50 py-24 sm:py-32">
     <div class="mx-auto max-w-7xl px-6 lg:px-8">
       <div class="mx-auto max-w-2xl text-center">
         <h2 class="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-          Simple, transparent pricing
+          What's 5 hours of your time worth? 💭
         </h2>
         <p class="mt-6 text-lg leading-8 text-gray-600">
-          Choose the plan that's right for your business. All plans include our core features.
+          At $50/hour, FlowTap pays for itself in the <strong>first week</strong>. 
+          Start completely free.
         </p>
+        <div class="mt-4 bg-gradient-to-r from-green-100 to-blue-100 rounded-full px-4 py-2 inline-block">
+          <span class="text-sm font-medium text-gray-700">
+            💰 Save $250+ per month in billable time
+          </span>
+        </div>
       </div>
       <div class="mx-auto mt-16 grid max-w-lg grid-cols-1 gap-y-8 lg:max-w-4xl lg:grid-cols-3 lg:gap-x-8">
-        <!-- Free tier -->
-        <div class="bg-white rounded-lg shadow-sm ring-1 ring-gray-200 p-8">
-          <h3 class="text-lg font-semibold leading-8 text-gray-900">Free</h3>
-          <p class="mt-4 text-sm leading-6 text-gray-600">Perfect for getting started</p>
-          <p class="mt-6 flex items-baseline gap-x-1">
-            <span class="text-4xl font-bold tracking-tight text-gray-900">$0</span>
-            <span class="text-sm font-semibold leading-6 text-gray-600">/month</span>
-          </p>
-          <ul role="list" class="mt-8 space-y-3 text-sm leading-6 text-gray-600">
-            <li class="flex gap-x-3">
-              <svg class="h-6 w-5 flex-none text-blue-600" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
-              </svg>
-              Basic features
-            </li>
-            <li class="flex gap-x-3">
-              <svg class="h-6 w-5 flex-none text-blue-600" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
-              </svg>
-              Email support
-            </li>
-          </ul>
-          <button class="mt-8 block w-full rounded-md bg-blue-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-blue-500">
-            Get started
+        <!-- Starter tier -->
+        <div class="bg-white rounded-lg shadow-sm ring-1 ring-gray-200 p-8 flex flex-col h-full">
+          <div class="flex-1">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-semibold leading-8 text-gray-900">Free Trial</h3>
+            </div>
+            <p class="text-sm leading-6 text-gray-600">2-week trial of Pro features</p>
+            <p class="mt-6 flex items-baseline gap-x-1">
+              <span class="text-4xl font-bold tracking-tight text-gray-900">Free</span>
+              <span class="text-sm font-semibold leading-6 text-gray-600">for 2 weeks</span>
+            </p>
+            <p class="text-xs text-green-600 mt-1 font-semibold">Experience all Pro features</p>
+            <ul role="list" class="mt-8 space-y-3 text-sm leading-6 text-gray-600">
+              <li class="flex gap-x-3">
+                <svg class="h-6 w-5 flex-none text-green-600" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
+                </svg>
+                500 transactions/month (high-volume freelancers)
+              </li>
+              <li class="flex gap-x-3">
+                <svg class="h-6 w-5 flex-none text-green-600" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
+                </svg>
+                Connect ALL platforms (freelancing sites + QuickBooks)
+              </li>
+              <li class="flex gap-x-3">
+                <svg class="h-6 w-5 flex-none text-green-600" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
+                </svg>
+                Daily sync (never fall behind again)
+              </li>
+              <li class="flex gap-x-3">
+                <svg class="h-6 w-5 flex-none text-green-600" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
+                </svg>
+                Priority support & detailed reports
+              </li>
+            </ul>
+          </div>
+          <% if user_signed_in? %>
+            <button class="mt-8 block w-full rounded-md bg-gray-400 px-3 py-2 text-center text-sm font-semibold text-white">
+              Current Plan
+            </button>
+          <% else %>
+            <%= link_to new_user_registration_path, class: "mt-8 block w-full rounded-md bg-blue-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-blue-500" do %>
+              Start saving time now
+            <% end %>
+          <% end %>
+        </div>
+        
+        <!-- Professional tier -->
+        <div class="bg-white rounded-lg shadow-lg ring-2 ring-blue-600 p-8 relative overflow-hidden flex flex-col h-full">
+          <div class="absolute top-0 right-0 bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-bl-lg">
+            BEST VALUE
+          </div>
+          <div class="flex-1">
+            <h3 class="text-lg font-semibold leading-8 text-blue-600">Professional</h3>
+            <p class="text-sm leading-6 text-gray-600">For serious freelancers</p>
+            <p class="mt-6 flex items-baseline gap-x-1">
+              <span class="text-4xl font-bold tracking-tight text-gray-900">$29</span>
+              <span class="text-sm font-semibold leading-6 text-gray-600">/month</span>
+            </p>
+            <p class="text-xs text-green-600 mt-1 font-semibold">Pays for itself in 35 minutes</p>
+            <ul role="list" class="mt-8 space-y-3 text-sm leading-6 text-gray-600">
+              <li class="flex gap-x-3">
+                <svg class="h-6 w-5 flex-none text-green-600" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
+                </svg>
+                500 transactions/month (high-volume freelancers)
+              </li>
+              <li class="flex gap-x-3">
+                <svg class="h-6 w-5 flex-none text-green-600" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
+                </svg>
+                Connect ALL platforms (freelancing sites + QuickBooks)
+              </li>
+              <li class="flex gap-x-3">
+                <svg class="h-6 w-5 flex-none text-green-600" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
+                </svg>
+                Daily sync (never fall behind again)
+              </li>
+              <li class="flex gap-x-3">
+                <svg class="h-6 w-5 flex-none text-green-600" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
+                </svg>
+                Detailed reports & analytics
+              </li>
+              <li class="flex gap-x-3">
+                <svg class="h-6 w-5 flex-none text-green-600" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
+                </svg>
+                Priority support (we respond same day)
+              </li>
+            </ul>
+          </div>
+          <button class="mt-8 block w-full rounded-md bg-gradient-to-r from-blue-600 to-indigo-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:from-blue-700 hover:to-indigo-700">
+            Coming very soon
           </button>
         </div>
         
-        <!-- Standard tier -->
-        <div class="bg-white rounded-lg shadow-sm ring-2 ring-blue-600 p-8">
-          <h3 class="text-lg font-semibold leading-8 text-blue-600">Standard</h3>
-          <p class="mt-4 text-sm leading-6 text-gray-600">For growing businesses</p>
-          <p class="mt-6 flex items-baseline gap-x-1">
-            <span class="text-4xl font-bold tracking-tight text-gray-900">$19</span>
-            <span class="text-sm font-semibold leading-6 text-gray-600">/month</span>
-          </p>
-          <ul role="list" class="mt-8 space-y-3 text-sm leading-6 text-gray-600">
-            <li class="flex gap-x-3">
-              <svg class="h-6 w-5 flex-none text-blue-600" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
-              </svg>
-              Everything in Free
-            </li>
-            <li class="flex gap-x-3">
-              <svg class="h-6 w-5 flex-none text-blue-600" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
-              </svg>
-              Advanced features
-            </li>
-            <li class="flex gap-x-3">
-              <svg class="h-6 w-5 flex-none text-blue-600" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
-              </svg>
-              Priority support
-            </li>
-          </ul>
+        <!-- Enterprise tier -->
+        <div class="bg-white rounded-lg shadow-sm ring-1 ring-gray-200 p-8 flex flex-col h-full">
+          <div class="flex-1">
+            <h3 class="text-lg font-semibold leading-8 text-gray-900">Enterprise</h3>
+            <p class="text-sm leading-6 text-gray-600">For agencies & teams</p>
+            <p class="mt-6 flex items-baseline gap-x-1">
+              <span class="text-4xl font-bold tracking-tight text-gray-900">$79</span>
+              <span class="text-sm font-semibold leading-6 text-gray-600">/month</span>
+            </p>
+            <p class="text-xs text-blue-600 mt-1 font-semibold">White-glove onboarding included</p>
+            <ul role="list" class="mt-8 space-y-3 text-sm leading-6 text-gray-600">
+              <li class="flex gap-x-3">
+                <svg class="h-6 w-5 flex-none text-green-600" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
+                </svg>
+                Unlimited everything (transactions, platforms)
+              </li>
+              <li class="flex gap-x-3">
+                <svg class="h-6 w-5 flex-none text-green-600" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
+                </svg>
+                Multiple team members & QuickBooks accounts
+              </li>
+              <li class="flex gap-x-3">
+                <svg class="h-6 w-5 flex-none text-green-600" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
+                </svg>
+                Real-time sync (instant updates)
+              </li>
+              <li class="flex gap-x-3">
+                <svg class="h-6 w-5 flex-none text-green-600" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
+                </svg>
+                Custom sync rules & advanced automation
+              </li>
+              <li class="flex gap-x-3">
+                <svg class="h-6 w-5 flex-none text-green-600" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
+                </svg>
+                Phone support + dedicated success manager
+              </li>
+            </ul>
+          </div>
           <button class="mt-8 block w-full rounded-md bg-blue-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-blue-500">
-            Coming soon
-          </button>
-        </div>
-        
-        <!-- Premium tier -->
-        <div class="bg-white rounded-lg shadow-sm ring-1 ring-gray-200 p-8">
-          <h3 class="text-lg font-semibold leading-8 text-gray-900">Premium</h3>
-          <p class="mt-4 text-sm leading-6 text-gray-600">For enterprise needs</p>
-          <p class="mt-6 flex items-baseline gap-x-1">
-            <span class="text-4xl font-bold tracking-tight text-gray-900">$49</span>
-            <span class="text-sm font-semibold leading-6 text-gray-600">/month</span>
-          </p>
-          <ul role="list" class="mt-8 space-y-3 text-sm leading-6 text-gray-600">
-            <li class="flex gap-x-3">
-              <svg class="h-6 w-5 flex-none text-blue-600" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
-              </svg>
-              Everything in Standard
-            </li>
-            <li class="flex gap-x-3">
-              <svg class="h-6 w-5 flex-none text-blue-600" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
-              </svg>
-              Premium features
-            </li>
-            <li class="flex gap-x-3">
-              <svg class="h-6 w-5 flex-none text-blue-600" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
-              </svg>
-              24/7 support
-            </li>
-          </ul>
-          <button class="mt-8 block w-full rounded-md bg-blue-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-blue-500">
-            Coming soon
+            Contact us
           </button>
         </div>
       </div>

@@ -35,7 +35,7 @@ Rails.application.routes.draw do
   post '/stripe/webhooks', to: 'stripe_webhooks#create'
   
   # Auth callback endpoint (public)
-  get '/auth/freelancer/authorize', to: 'auth/freelancer#authorize'
+  post '/auth/freelancer/authorize', to: 'auth/freelancer#authorize'
   
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 

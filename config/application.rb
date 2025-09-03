@@ -40,7 +40,6 @@ module SaasTemplate
     # Configure timezone
     config.time_zone = 'UTC'
     
-    # Configure autoload paths for custom errors
-    config.autoload_paths += %W(#{config.root}/app/errors)
+    # Error classes are now in app/models for better autoloading
   end
 end

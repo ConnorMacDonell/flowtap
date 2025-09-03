@@ -3,9 +3,8 @@ class ApplicationController < ActionController::Base
   before_action :configure_permitted_parameters, if: :devise_controller?
   before_action :set_request_id
   
-  # Custom error handling
+  # Standard Rails error handling
   rescue_from StandardError, with: :handle_standard_error
-  rescue_from ApplicationError, with: :handle_application_error
   rescue_from ActiveRecord::RecordNotFound, with: :handle_not_found
   
   # Check if admin is impersonating a user
@@ -49,10 +48,8 @@ class ApplicationController < ActionController::Base
   end
   
   def handle_standard_error(error)
-    log_error("Unhandled error: #{error.message}", {
-      error_class: error.class.name,
-      backtrace: error.backtrace.first(5)
-    })
+    Rails.logger.error "Unhandled error: #{error.message}"
+    Rails.logger.error error.backtrace.join("\n")
     
     if Rails.env.production?
       redirect_to '/500'
@@ -61,18 +58,8 @@ class ApplicationController < ActionController::Base
     end
   end
   
-  def handle_application_error(error)
-    log_error("Application error: #{error.message}", {
-      error_code: error.error_code,
-      user_message: error.user_message
-    })
-    
-    flash[:alert] = error.user_message
-    redirect_back(fallback_location: root_path)
-  end
-  
   def handle_not_found(error)
-    log_warn("Record not found: #{error.message}")
+    Rails.logger.warn "Record not found: #{error.message}"
     
     respond_to do |format|
       format.html { redirect_to '/404' }

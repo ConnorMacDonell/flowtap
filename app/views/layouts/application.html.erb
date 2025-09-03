@@ -84,13 +84,17 @@
 
     <!-- Main content -->
     <main class="flex-1">
-      <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+      <% if controller_name == 'home' && action_name == 'index' %>
         <%= yield %>
-      </div>
+      <% else %>
+        <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+          <%= yield %>
+        </div>
+      <% end %>
     </main>
 
     <!-- Footer -->
-    <footer class="bg-white border-t border-gray-200">
+    <footer class="bg-white border-t border-gray-200 hidden">
       <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
         <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
