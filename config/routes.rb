@@ -34,8 +34,18 @@ Rails.application.routes.draw do
   # Stripe webhook (public)
   post '/stripe/webhooks', to: 'stripe_webhooks#create'
   
-  # Auth callback endpoint (public)
+  # Auth callback endpoints (public/protected)
   post '/auth/freelancer/authorize', to: 'auth/freelancer#authorize'
+  
+  # QBO OAuth2 routes (protected)
+  namespace :auth do
+    namespace :qbo do
+      get :connect
+      get :callback
+      delete :disconnect
+      get :status
+    end
+  end
   
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
