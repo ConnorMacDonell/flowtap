@@ -63,12 +63,35 @@ class User < ApplicationRecord
     when 'free'
       ['basic_features'].include?(feature)
     when 'standard'
-      ['basic_features', 'advanced_analytics', 'priority_support'].include?(feature)
+      ['basic_features', 'advanced_analytics', 'priority_support', 'qbo_integration'].include?(feature)
     when 'premium'
       true # Premium users get all features
     else
       false
     end
+  end
+
+  # QBO integration helpers
+  def qbo_connected?
+    qbo_realm_id.present? && qbo_access_token.present?
+  end
+
+  def qbo_token_expired?
+    qbo_token_expires_at.present? && qbo_token_expires_at < Time.current
+  end
+
+  def qbo_token_valid?
+    qbo_connected? && !qbo_token_expired?
+  end
+
+  def disconnect_qbo!
+    update!(
+      qbo_realm_id: nil,
+      qbo_access_token: nil,
+      qbo_refresh_token: nil,
+      qbo_token_expires_at: nil,
+      qbo_connected_at: nil
+    )
   end
 
   private
