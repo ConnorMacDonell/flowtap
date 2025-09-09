@@ -36,7 +36,9 @@ class Users::RegistrationsController < Devise::RegistrationsController
     resource.soft_delete!
     
     # Send account deletion email
-    EmailJob.perform_later('UserMailer', 'account_deleted', user_data)
+    UserMailer.account_deleted(user_data).deliver_now
+    # TODO use background job
+    # EmailJob.perform_later('UserMailer', 'account_deleted', user_data)
     
     Devise.sign_out_all_scopes ? sign_out : sign_out(resource_name)
     set_flash_message! :notice, :destroyed

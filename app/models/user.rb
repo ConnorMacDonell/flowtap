@@ -102,6 +102,7 @@ class User < ApplicationRecord
   
   def send_welcome_email
     return unless confirmed_at.present? && confirmed_at_previously_changed?
-    EmailJob.perform_later('UserMailer', 'welcome_email', id)
+    UserMailer.welcome_email(self).deliver_now
+    # EmailJob.perform_later('UserMailer', 'welcome_email', id)
   end
 end

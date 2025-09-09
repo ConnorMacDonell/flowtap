@@ -62,7 +62,9 @@ class StripeWebhookJob < ApplicationJob
       current_period_end: Time.at(subscription[:current_period_end])
     )
     
-    EmailJob.perform_later('UserMailer', 'subscription_updated', user.id, old_tier, tier)
+    UserMailer.subscription_updated(user, old_tier, tier).deliver_now
+    # TODO use background job
+    # EmailJob.perform_later('UserMailer', 'subscription_updated', user.id, old_tier, tier)
   end
   
   def handle_subscription_updated(subscription)
@@ -79,7 +81,9 @@ class StripeWebhookJob < ApplicationJob
     )
     
     if old_tier != tier
-      EmailJob.perform_later('UserMailer', 'subscription_updated', user_subscription.user.id, old_tier, tier)
+      UserMailer.subscription_updated(user_subscription.user, old_tier, tier).deliver_now
+      # TODO use background job
+      # EmailJob.perform_later('UserMailer', 'subscription_updated', user_subscription.user.id, old_tier, tier)
     end
   end
   
@@ -97,7 +101,9 @@ class StripeWebhookJob < ApplicationJob
       canceled_at: Time.current
     )
     
-    EmailJob.perform_later('UserMailer', 'subscription_updated', user_subscription.user.id, old_tier, 'free')
+    UserMailer.subscription_updated(user_subscription.user, old_tier, 'free').deliver_now
+    # TODO use background job
+    # EmailJob.perform_later('UserMailer', 'subscription_updated', user_subscription.user.id, old_tier, 'free')
   end
   
   def handle_payment_succeeded(invoice)
@@ -111,7 +117,9 @@ class StripeWebhookJob < ApplicationJob
     return unless user
     
     invoice_url = invoice[:hosted_invoice_url]
-    EmailJob.perform_later('UserMailer', 'payment_failed', user.id, invoice_url)
+    UserMailer.payment_failed(user, invoice_url).deliver_now
+    # TODO use background job
+    # EmailJob.perform_later('UserMailer', 'payment_failed', user.id, invoice_url)
   end
   
   def handle_customer_created(customer)
