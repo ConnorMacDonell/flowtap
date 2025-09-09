@@ -51,6 +51,9 @@ gem 'stripe'
 # Email service
 gem 'sendgrid-ruby'
 
+# QuickBooks Online API integration
+gem 'qbo_api'
+
 # Search functionality
 gem 'ransack'
 
