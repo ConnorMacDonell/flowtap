@@ -175,7 +175,7 @@ class StripeWebhooksController < ApplicationController
     # Map Stripe price IDs to our subscription tiers
     # Since we only have one paid tier, map any valid price ID to 'paid'
     case price_id
-    when ENV['STRIPE_PRICE_ID']
+    when ENV['STRIPE_STANDARD_PRICE_ID']
       'paid'
     else
       'paid'  # Default to paid for any subscription

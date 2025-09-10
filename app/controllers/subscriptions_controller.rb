@@ -43,7 +43,7 @@ class SubscriptionsController < ApplicationController
     ensure_stripe_customer!
 
     # Redirect to Stripe payment link
-    payment_link_url = ENV['STRIPE_PAYMENT_LINK']
+    payment_link_url = ENV['STRIPE_STANDARD_PAYMENT_LINK']
     if payment_link_url.present?
       redirect_to payment_link_url, allow_other_host: true
     else

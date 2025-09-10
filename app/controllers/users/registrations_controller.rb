@@ -111,7 +111,7 @@ class Users::RegistrationsController < Devise::RegistrationsController
 
   def stripe_payment_link
     # Build Stripe payment link with success URL back to our app
-    base_url = ENV['STRIPE_PAYMENT_LINK'] || 'https://buy.stripe.com/test_placeholder'
+    base_url = ENV['STRIPE_STANDARD_PAYMENT_LINK'] || 'https://buy.stripe.com/test_placeholder'
     success_url = "#{request.base_url}/subscriptions/success"
     "#{base_url}?success_url=#{CGI.escape(success_url)}"
   end
