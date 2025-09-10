@@ -5,31 +5,47 @@
       <h2 class="text-base font-semibold leading-7 text-indigo-600">Pricing</h2>
       <p class="mt-2 text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">Choose the right plan for you</p>
       <p class="mt-6 text-lg leading-8 text-gray-600">
-        Start with our free plan and upgrade as your needs grow. All plans include our core features with varying limits and support levels.
+        Get full access to all features with our Pro plan. Start your subscription today.
       </p>
     </div>
   </div>
 
   <!-- Current subscription status -->
-  <% if @current_subscription %>
+  <% if @current_subscription&.active? %>
     <div class="mx-auto max-w-7xl px-6 pb-12">
-      <div class="rounded-md bg-blue-50 p-4">
+      <div class="rounded-md bg-green-50 p-4">
         <div class="flex">
           <div class="flex-shrink-0">
-            <svg class="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <svg class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.236 4.53L8.23 10.661a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clip-rule="evenodd" />
+            </svg>
+          </div>
+          <div class="ml-3">
+            <h3 class="text-sm font-medium text-green-800">
+              Active Subscription: <%= @current_subscription.tier_name %>
+            </h3>
+            <div class="mt-2 text-sm text-green-700">
+              <p>You have full access to all features ($<%= @current_subscription.tier_price %>/month)</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  <% else %>
+    <div class="mx-auto max-w-7xl px-6 pb-12">
+      <div class="rounded-md bg-yellow-50 p-4">
+        <div class="flex">
+          <div class="flex-shrink-0">
+            <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
               <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clip-rule="evenodd" />
             </svg>
           </div>
           <div class="ml-3">
-            <h3 class="text-sm font-medium text-blue-800">
-              Current Plan: <%= @current_subscription.tier_name %>
+            <h3 class="text-sm font-medium text-yellow-800">
+              No Active Subscription
             </h3>
-            <div class="mt-2 text-sm text-blue-700">
-              <p>You are currently on the <%= @current_subscription.tier_name %> plan 
-                <% unless @current_subscription.free? %>
-                  ($<%= @current_subscription.tier_price %>/month)
-                <% end %>
-              </p>
+            <div class="mt-2 text-sm text-yellow-700">
+              <p>Subscribe to get access to all features and priority support</p>
             </div>
           </div>
         </div>
@@ -37,43 +53,28 @@
     </div>
   <% end %>
 
-  <!-- Pricing tiers -->
+  <!-- Pricing tier -->
   <div class="mx-auto max-w-7xl px-6 pb-24 sm:pb-32 lg:px-8">
-    <div class="mx-auto max-w-md space-y-8 lg:max-w-4xl lg:grid lg:grid-cols-3 lg:gap-8 lg:space-y-0">
+    <div class="mx-auto max-w-md">
       <% @tiers.each do |tier_key, tier_data| %>
-        <div class="flex flex-col justify-between rounded-3xl bg-white p-8 ring-1 ring-gray-200 xl:p-10 <%= tier_key == 'standard' ? 'lg:z-10 lg:rounded-b-none' : '' %>">
+        <div class="flex flex-col justify-between rounded-3xl bg-white p-8 ring-2 ring-indigo-600 xl:p-10">
           <div>
             <div class="flex items-center justify-between gap-x-4">
-              <h3 id="<%= tier_key %>" class="<%= tier_key == 'standard' ? 'text-indigo-600' : 'text-gray-900' %> text-lg font-semibold leading-8">
+              <h3 id="<%= tier_key %>" class="text-indigo-600 text-2xl font-bold leading-8">
                 <%= tier_data[:name] %>
               </h3>
-              <% if tier_key == 'standard' %>
-                <p class="rounded-full bg-indigo-600/10 px-2.5 py-1 text-xs font-semibold leading-5 text-indigo-600">Most popular</p>
-              <% end %>
+              <p class="rounded-full bg-indigo-600/10 px-2.5 py-1 text-xs font-semibold leading-5 text-indigo-600">Full access</p>
             </div>
-            <p class="mt-4 text-sm leading-6 text-gray-600">
-              <% case tier_key %>
-              <% when 'free' %>
-                Perfect for getting started and exploring our platform.
-              <% when 'standard' %>
-                Great for growing teams and businesses that need more advanced features.
-              <% when 'premium' %>
-                For enterprises and power users who need everything we offer.
-              <% end %>
+            <p class="mt-4 text-base leading-6 text-gray-600">
+              Everything you need to get the most out of our platform. No limitations, no restrictions.
             </p>
             <p class="mt-6 flex items-baseline gap-x-1">
-              <span class="text-4xl font-bold tracking-tight text-gray-900">
-                <% if tier_data[:price] == 0 %>
-                  Free
-                <% else %>
-                  $<%= tier_data[:price] %>
-                <% end %>
+              <span class="text-5xl font-bold tracking-tight text-gray-900">
+                $<%= tier_data[:price] %>
               </span>
-              <% if tier_data[:price] > 0 %>
-                <span class="text-sm font-semibold leading-6 text-gray-600">/month</span>
-              <% end %>
+              <span class="text-lg font-semibold leading-6 text-gray-600">/month</span>
             </p>
-            <ul role="list" class="mt-8 space-y-3 text-sm leading-6 text-gray-600">
+            <ul role="list" class="mt-8 space-y-3 text-base leading-6 text-gray-600">
               <% tier_data[:features].each do |feature| %>
                 <li class="flex gap-x-3">
                   <svg class="h-6 w-5 flex-none text-indigo-600" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -86,24 +87,19 @@
           </div>
 
           <!-- Action button -->
-          <% if @current_subscription&.status == tier_key %>
-            <button type="button" disabled class="mt-8 block w-full rounded-md bg-gray-300 px-3.5 py-2 text-center text-sm font-semibold text-gray-500 cursor-not-allowed">
-              Current plan
-            </button>
-          <% elsif tier_key == 'free' %>
-            <% if @current_subscription.nil? || !@current_subscription.free? %>
-              <%= link_to "Switch to Free", new_subscription_path(tier: tier_key), 
-                          class: "mt-8 block w-full rounded-md bg-indigo-600 px-3.5 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600" %>
-            <% else %>
-              <button type="button" disabled class="mt-8 block w-full rounded-md bg-gray-300 px-3.5 py-2 text-center text-sm font-semibold text-gray-500 cursor-not-allowed">
-                Current plan
+          <% if @current_subscription&.active? %>
+            <div class="mt-8 space-y-3">
+              <button type="button" disabled class="block w-full rounded-md bg-green-100 px-3.5 py-3 text-center text-base font-semibold text-green-800 cursor-default border-2 border-green-300">
+                ✓ Active Subscription
               </button>
-            <% end %>
+              <%= link_to "Cancel Subscription", cancel_subscription_path, 
+                          method: :delete,
+                          class: "block w-full rounded-md bg-red-600 px-3.5 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-red-500",
+                          data: { confirm: 'Are you sure you want to cancel your subscription?' } %>
+            </div>
           <% else %>
-            <!-- Paid tiers are blocked -->
-            <button type="button" disabled class="mt-8 block w-full rounded-md bg-gray-300 px-3.5 py-2 text-center text-sm font-semibold text-gray-500 cursor-not-allowed">
-              Coming Soon
-            </button>
+            <%= link_to "Start Subscription", new_subscription_path, 
+                        class: "mt-8 block w-full rounded-md bg-indigo-600 px-3.5 py-3 text-center text-lg font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600" %>
           <% end %>
         </div>
       <% end %>
@@ -115,10 +111,10 @@
       <dl class="mt-10 space-y-6 divide-y divide-gray-900/10">
         <div class="pt-6">
           <dt class="text-base font-semibold leading-7 text-gray-900">
-            Can I change my plan at any time?
+            Can I cancel my subscription at any time?
           </dt>
           <dd class="mt-2 text-base leading-7 text-gray-600">
-            Yes, you can upgrade or downgrade your plan at any time. Changes take effect immediately, and billing is prorated.
+            Yes, you can cancel your subscription at any time. Your access will continue until the end of your current billing period.
           </dd>
         </div>
         <div class="pt-6">
@@ -134,15 +130,15 @@
             Is there a free trial?
           </dt>
           <dd class="mt-2 text-base leading-7 text-gray-600">
-            Our Free plan gives you access to core features with no time limit. You can upgrade to paid plans when you need additional features.
+            We don't offer a traditional free trial, but you can explore our platform features after subscribing. Cancel within the first 30 days for a full refund.
           </dd>
         </div>
         <div class="pt-6">
           <dt class="text-base font-semibold leading-7 text-gray-900">
-            When will paid plans be available?
+            What happens to my data if I cancel?
           </dt>
           <dd class="mt-2 text-base leading-7 text-gray-600">
-            We're currently in beta with our free plan. Paid plans with additional features and support options will be available soon.
+            Your data remains secure and accessible for 30 days after cancellation. You can reactivate your subscription or export your data during this period.
           </dd>
         </div>
       </dl>

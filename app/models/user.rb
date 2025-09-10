@@ -14,7 +14,6 @@ class User < ApplicationRecord
   validates :timezone, presence: true
 
   # Callbacks
-  after_create :create_free_subscription
   after_update :send_welcome_email, if: :confirmed_at_previously_changed?
 
   # Scopes
@@ -51,24 +50,19 @@ class User < ApplicationRecord
 
   # Subscription helpers
   def subscription_tier
-    subscription&.status || 'free'
+    subscription&.status || 'inactive'
   end
 
   def subscription_tier_name
-    subscription&.tier_name || 'Free'
+    subscription&.tier_name || 'No Subscription'
+  end
+
+  def has_active_subscription?
+    subscription&.active? && subscription&.paid? || false
   end
 
   def can_access_feature?(feature)
-    case subscription_tier
-    when 'free'
-      ['basic_features'].include?(feature)
-    when 'standard'
-      ['basic_features', 'advanced_analytics', 'priority_support', 'qbo_integration'].include?(feature)
-    when 'premium'
-      true # Premium users get all features
-    else
-      false
-    end
+    has_active_subscription?
   end
 
   # QBO integration helpers
@@ -96,9 +90,6 @@ class User < ApplicationRecord
 
   private
 
-  def create_free_subscription
-    build_subscription(status: 'free').save!
-  end
   
   def send_welcome_email
     return unless confirmed_at.present? && confirmed_at_previously_changed?

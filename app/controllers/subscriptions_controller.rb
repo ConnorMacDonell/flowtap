@@ -11,58 +11,84 @@ class SubscriptionsController < ApplicationController
   end
 
   def new
-    @tier = params[:tier]
     @subscription = current_user.subscription
     
-    # Validate tier parameter
-    unless Subscription::TIERS.key?(@tier)
-      redirect_to subscriptions_path, alert: 'Invalid subscription tier'
-      return
-    end
-
-    # Check if user can upgrade to this tier
-    unless @subscription.can_upgrade_to?(@tier)
-      redirect_to subscriptions_path, alert: 'Cannot upgrade to this tier'
-      return
-    end
-
-    # For now, block all paid tiers as specified in requirements
-    if @tier != 'free'
-      redirect_to subscriptions_path, alert: 'Paid subscriptions are coming soon!'
+    # Check if user already has active subscription
+    if @subscription&.active?
+      redirect_to subscriptions_path, notice: 'You already have an active subscription'
       return
     end
   end
 
   def create
-    @tier = params[:tier]
     @subscription = current_user.subscription
 
-    # Block all paid tiers as specified in requirements
-    if @tier != 'free'
-      redirect_to subscriptions_path, alert: 'Paid subscriptions are coming soon!'
+    # Check if user already has active subscription
+    if @subscription&.active?
+      redirect_to subscriptions_path, alert: 'You already have an active subscription'
       return
     end
 
-    # In the future, this is where Stripe checkout would be handled
-    # For now, just redirect back with message
-    redirect_to subscriptions_path, notice: 'Subscription management coming soon!'
+    # Create or update Stripe customer
+    ensure_stripe_customer!
+
+    # Redirect to Stripe payment link
+    payment_link_url = ENV['STRIPE_PAYMENT_LINK']
+    if payment_link_url.present?
+      redirect_to payment_link_url, allow_other_host: true
+    else
+      redirect_to subscriptions_path, alert: 'Payment system unavailable. Please try again later.'
+    end
+  end
+
+  def success
+    @message = params[:message] || 'Payment successful! Your subscription will be activated shortly.'
+  end
+
+  def cancel_payment
+    @message = 'Payment was cancelled. You can try again anytime.'
   end
 
   def cancel
     @subscription = current_user.subscription
     
-    if @subscription.free?
-      redirect_to subscriptions_path, alert: 'Cannot cancel free subscription'
+    unless @subscription&.active?
+      redirect_to subscriptions_path, alert: 'No active subscription to cancel'
       return
     end
 
-    # For now, just show message since paid tiers are blocked
-    redirect_to subscriptions_path, alert: 'Subscription cancellation coming soon!'
+    # Cancel the Stripe subscription
+    if @subscription.stripe_subscription_id.present?
+      begin
+        Stripe::Subscription.cancel(@subscription.stripe_subscription_id)
+        redirect_to subscriptions_path, notice: 'Subscription cancelled successfully!'
+      rescue Stripe::StripeError => e
+        redirect_to subscriptions_path, alert: "Error cancelling subscription: #{e.message}"
+      end
+    else
+      redirect_to subscriptions_path, alert: 'No active subscription to cancel'
+    end
   end
 
   private
 
-  def subscription_params
-    params.require(:subscription).permit(:tier)
+  def ensure_stripe_customer!
+    return if current_user.stripe_customer_id.present?
+
+    begin
+      customer = Stripe::Customer.create(
+        email: current_user.email,
+        name: "#{current_user.first_name} #{current_user.last_name}".strip,
+        metadata: {
+          user_id: current_user.id
+        }
+      )
+      current_user.update!(stripe_customer_id: customer.id)
+    rescue Stripe::StripeError => e
+      Rails.logger.error "Failed to create Stripe customer: #{e.message}"
+      raise
+    end
   end
+
+
 end

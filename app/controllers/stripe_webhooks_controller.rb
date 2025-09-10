@@ -160,7 +160,7 @@ class StripeWebhooksController < ApplicationController
     
     if user_subscription
       user_subscription.update!(
-        status: 'free',  # Revert to free plan
+        status: 'canceled',
         stripe_subscription_id: nil,
         canceled_at: Time.current,
         current_period_start: nil,
@@ -173,14 +173,12 @@ class StripeWebhooksController < ApplicationController
 
   def map_price_id_to_tier(price_id)
     # Map Stripe price IDs to our subscription tiers
-    # These would be configured when setting up Stripe products
+    # Since we only have one paid tier, map any valid price ID to 'paid'
     case price_id
-    when ENV['STRIPE_STANDARD_PRICE_ID']
-      'standard'
-    when ENV['STRIPE_PREMIUM_PRICE_ID']
-      'premium'
+    when ENV['STRIPE_PRICE_ID']
+      'paid'
     else
-      'free'  # Default fallback
+      'paid'  # Default to paid for any subscription
     end
   end
 end

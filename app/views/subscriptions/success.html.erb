@@ -1,0 +1,57 @@
+<div class="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+  <div class="sm:mx-auto sm:w-full sm:max-w-md">
+    <div class="text-center">
+      <div class="mx-auto h-12 w-12 text-green-600">
+        <svg class="h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+        </svg>
+      </div>
+      <h2 class="mt-6 text-3xl font-extrabold text-gray-900">
+        Payment Successful!
+      </h2>
+      <p class="mt-2 text-sm text-gray-600">
+        <%= @message %>
+      </p>
+    </div>
+
+    <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+      <div class="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+        <div class="space-y-6">
+          <div class="text-center">
+            <h3 class="text-lg font-medium text-gray-900">What happens next?</h3>
+            <ul class="mt-4 text-sm text-gray-600 space-y-2">
+              <li class="flex items-center">
+                <svg class="h-4 w-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                Your subscription will be activated within minutes
+              </li>
+              <li class="flex items-center">
+                <svg class="h-4 w-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                You'll receive a confirmation email
+              </li>
+              <li class="flex items-center">
+                <svg class="h-4 w-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                All premium features will be available
+              </li>
+            </ul>
+          </div>
+
+          <div class="flex flex-col space-y-3">
+            <%= link_to dashboard_path, class: "w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" do %>
+              Go to Dashboard
+            <% end %>
+            
+            <%= link_to subscriptions_path, class: "w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" do %>
+              View Subscription
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
