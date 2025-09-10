@@ -7,25 +7,10 @@ FactoryBot.define do
     timezone { 'UTC' }
     confirmed_at { Time.current }
     
-    after(:create) do |user|
-      create(:subscription, user: user, status: 'free') unless user.subscription
-    end
 
-    trait :with_free_subscription do
+    trait :with_paid_subscription do
       after(:create) do |user|
-        user.subscription&.update(status: 'free') || create(:subscription, user: user, status: 'free')
-      end
-    end
-
-    trait :with_standard_subscription do
-      after(:create) do |user|
-        user.subscription&.update(status: 'standard') || create(:subscription, user: user, status: 'standard')
-      end
-    end
-
-    trait :with_premium_subscription do
-      after(:create) do |user|
-        user.subscription&.update(status: 'premium') || create(:subscription, user: user, status: 'premium')
+        create(:subscription, user: user, status: 'paid')
       end
     end
 

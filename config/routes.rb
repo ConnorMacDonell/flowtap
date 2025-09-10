@@ -26,6 +26,10 @@ Rails.application.routes.draw do
   
   # Subscription routes (protected)
   resources :subscriptions, only: [:index, :show, :new, :create] do
+    collection do
+      get :success
+      get :cancel_payment
+    end
     member do
       delete :cancel
     end

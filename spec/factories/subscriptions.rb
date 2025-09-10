@@ -1,24 +1,24 @@
 FactoryBot.define do
   factory :subscription do
     association :user
-    status { 'free' }
+    status { 'paid' }
+    stripe_subscription_id { 'sub_paid_123' }
+    current_period_start { 1.month.ago }
+    current_period_end { 1.month.from_now }
     
-    trait :free do
-      status { 'free' }
-    end
-    
-    trait :standard do
-      status { 'standard' }
-      stripe_subscription_id { 'sub_standard_123' }
+    trait :paid do
+      status { 'paid' }
+      stripe_subscription_id { 'sub_paid_123' }
       current_period_start { 1.month.ago }
       current_period_end { 1.month.from_now }
     end
     
-    trait :premium do
-      status { 'premium' }
-      stripe_subscription_id { 'sub_premium_123' }
+    trait :canceled do
+      status { 'paid' }
+      stripe_subscription_id { 'sub_paid_123' }
+      canceled_at { 1.day.ago }
       current_period_start { 1.month.ago }
-      current_period_end { 1.month.from_now }
+      current_period_end { 1.week.from_now }
     end
   end
 end
