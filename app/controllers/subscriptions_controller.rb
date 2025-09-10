@@ -18,6 +18,11 @@ class SubscriptionsController < ApplicationController
       redirect_to subscriptions_path, notice: 'You already have an active subscription'
       return
     end
+    
+    # Create subscription if it doesn't exist or is canceled
+    unless @subscription
+      @subscription = current_user.create_subscription!(status: 'inactive')
+    end
   end
 
   def create
@@ -27,6 +32,11 @@ class SubscriptionsController < ApplicationController
     if @subscription&.active?
       redirect_to subscriptions_path, alert: 'You already have an active subscription'
       return
+    end
+    
+    # Create subscription if it doesn't exist
+    unless @subscription
+      @subscription = current_user.create_subscription!(status: 'inactive')
     end
 
     # Create or update Stripe customer
@@ -42,7 +52,12 @@ class SubscriptionsController < ApplicationController
   end
 
   def success
-    @message = params[:message] || 'Payment successful! Your subscription will be activated shortly.'
+    if current_user.has_active_subscription?
+      flash[:success] = "Welcome! Your subscription is now active."
+    else
+      flash[:notice] = "Payment successful! Your subscription is being activated."
+    end
+    redirect_to dashboard_path
   end
 
   def cancel_payment

@@ -9,13 +9,14 @@ class Subscription < ApplicationRecord
     }
   }.freeze
 
-  STATUSES = ['paid', 'canceled'].freeze
+  STATUSES = ['paid', 'canceled', 'inactive'].freeze
 
   validates :status, presence: true, inclusion: { in: STATUSES }
   validates :stripe_subscription_id, uniqueness: true, allow_nil: true
 
-  scope :active, -> { where.not(status: 'canceled') }
+  scope :active, -> { where(status: 'paid') }
   scope :canceled, -> { where(status: 'canceled') }
+  scope :inactive, -> { where(status: 'inactive') }
   scope :by_tier, ->(tier) { where(status: tier) }
 
   def tier_name
@@ -35,11 +36,15 @@ class Subscription < ApplicationRecord
   end
 
   def active?
-    !canceled?
+    status == 'paid'
   end
 
   def canceled?
-    canceled_at.present?
+    status == 'canceled'
+  end
+
+  def inactive?
+    status == 'inactive'
   end
 
   def monthly_price

@@ -54,11 +54,12 @@ class User < ApplicationRecord
   end
 
   def subscription_tier_name
+    return 'Inactive' if subscription&.inactive?
     subscription&.tier_name || 'No Subscription'
   end
 
   def has_active_subscription?
-    subscription&.active? && subscription&.paid? || false
+    subscription&.active? || false
   end
 
   def can_access_feature?(feature)
