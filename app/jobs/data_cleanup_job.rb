@@ -50,6 +50,9 @@ class DataCleanupJob < ApplicationJob
     # Refresh Freelancer tokens that expire soon
     refresh_freelancer_tokens
 
+    # Refresh QBO tokens that expire soon
+    refresh_qbo_tokens
+
     Rails.logger.info "Daily cleanup completed: #{cleanup_count} files removed"
   end
   
@@ -156,5 +159,13 @@ class DataCleanupJob < ApplicationJob
     Rails.logger.info "Queued Freelancer token refresh job"
   rescue StandardError => e
     Rails.logger.error "Failed to queue Freelancer token refresh job: #{e.message}"
+  end
+
+  def refresh_qbo_tokens
+    # Queue the QBO token refresh job to run for all users needing refresh
+    QboTokenRefreshJob.perform_later
+    Rails.logger.info "Queued QBO token refresh job"
+  rescue StandardError => e
+    Rails.logger.error "Failed to queue QBO token refresh job: #{e.message}"
   end
 end

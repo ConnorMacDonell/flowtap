@@ -2,11 +2,25 @@ class Auth::QboController < ApplicationController
   before_action :authenticate_user!
 
   def connect
-    redirect_to qbo_authorization_url, allow_other_host: true
+    # Generate and store state parameter for CSRF protection
+    state = SecureRandom.hex(32)
+    session[:qbo_oauth_state] = state
+
+    redirect_to qbo_authorization_url(state), allow_other_host: true
   end
 
   def callback
     begin
+      # Validate state parameter for CSRF protection
+      unless params[:state].present? && params[:state] == session[:qbo_oauth_state]
+        Rails.logger.error "QBO OAuth state mismatch: expected #{session[:qbo_oauth_state]}, got #{params[:state]}"
+        redirect_to dashboard_path, alert: 'OAuth state validation failed. Please try connecting again.'
+        return
+      end
+
+      # Clear the state from session after validation
+      session.delete(:qbo_oauth_state)
+
       token_response = exchange_code_for_tokens(params[:code])
       
       current_user.update!(
@@ -81,14 +95,17 @@ class Auth::QboController < ApplicationController
 
   private
 
-  def qbo_authorization_url
-    base_url = Rails.env.production? ? 'https://appcenter.intuit.com' : 'https://appcenter-sandbox.intuit.com'
+  def qbo_authorization_url(state)
+    # QBO OAuth2 uses the same authorization endpoint for both sandbox and production
+    # The environment is determined by the app keys, not the URL
+    base_url = 'https://appcenter.intuit.com'
     params = {
       'client_id' => ENV['QBO_CLIENT_ID'],
       'scope' => 'com.intuit.quickbooks.accounting',
       'redirect_uri' => auth_qbo_callback_url,
       'response_type' => 'code',
-      'access_type' => 'offline'
+      'access_type' => 'offline',
+      'state' => state
     }
     "#{base_url}/connect/oauth2?#{params.to_query}"
   end
@@ -97,10 +114,10 @@ class Auth::QboController < ApplicationController
     connection = Faraday.new(url: token_endpoint_url) do |conn|
       conn.request :url_encoded
       conn.response :json
-      conn.basic_auth(ENV['QBO_CLIENT_ID'], ENV['QBO_CLIENT_SECRET'])
     end
 
     response = connection.post do |req|
+      req.headers['Authorization'] = "Basic #{Base64.strict_encode64("#{ENV['QBO_CLIENT_ID']}:#{ENV['QBO_CLIENT_SECRET']}")}"
       req.body = {
         'grant_type' => 'authorization_code',
         'code' => code,
@@ -116,6 +133,7 @@ class Auth::QboController < ApplicationController
   end
 
   def token_endpoint_url
-    Rails.env.production? ? 'https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer' : 'https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer'
+    # QBO uses the same token endpoint for both sandbox and production
+    'https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer'
   end
 end

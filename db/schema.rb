@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_09_09_000847) do
+ActiveRecord::Schema[7.1].define(version: 2025_09_18_023629) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -78,7 +78,7 @@ ActiveRecord::Schema[7.1].define(version: 2025_09_09_000847) do
     t.string "first_name"
     t.string "last_name"
     t.string "timezone", default: "UTC"
-    t.boolean "marketing_emails", default: true
+    t.boolean "marketing_emails", default: false
     t.datetime "deleted_at"
     t.string "stripe_customer_id"
     t.datetime "created_at", null: false
@@ -88,9 +88,17 @@ ActiveRecord::Schema[7.1].define(version: 2025_09_09_000847) do
     t.text "qbo_refresh_token"
     t.datetime "qbo_token_expires_at"
     t.datetime "qbo_connected_at"
+    t.string "freelancer_user_id"
+    t.text "freelancer_access_token"
+    t.text "freelancer_refresh_token"
+    t.datetime "freelancer_token_expires_at"
+    t.text "freelancer_scopes"
+    t.datetime "freelancer_connected_at"
     t.index ["confirmation_token"], name: "index_users_on_confirmation_token", unique: true
     t.index ["deleted_at"], name: "index_users_on_deleted_at"
     t.index ["email"], name: "index_users_on_email", unique: true
+    t.index ["freelancer_connected_at"], name: "index_users_on_freelancer_connected_at"
+    t.index ["freelancer_user_id"], name: "index_users_on_freelancer_user_id", unique: true
     t.index ["qbo_connected_at"], name: "index_users_on_qbo_connected_at"
     t.index ["qbo_realm_id"], name: "index_users_on_qbo_realm_id"
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true

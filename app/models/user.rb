@@ -79,6 +79,22 @@ class User < ApplicationRecord
     qbo_connected? && !qbo_token_expired?
   end
 
+  def qbo_token_expires_soon?
+    qbo_token_expires_at.present? && qbo_token_expires_at <= 7.days.from_now
+  end
+
+  def qbo_needs_refresh?
+    qbo_connected? && (qbo_token_expired? || qbo_token_expires_soon?)
+  end
+
+  def qbo_can_refresh?
+    qbo_refresh_token.present? && qbo_connected_at.present? && qbo_connected_at > 180.days.ago
+  end
+
+  def qbo_refresh_token_expired?
+    qbo_connected_at.blank? || qbo_connected_at <= 180.days.ago
+  end
+
   def disconnect_qbo!
     update!(
       qbo_realm_id: nil,

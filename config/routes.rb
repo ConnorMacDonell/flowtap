@@ -38,16 +38,22 @@ Rails.application.routes.draw do
   # Stripe webhook (public)
   post '/stripe/webhooks', to: 'stripe_webhooks#create'
   
-  # Auth callback endpoints (public/protected)
-  post '/auth/freelancer/authorize', to: 'auth/freelancer#authorize'
-  
-  # QBO OAuth2 routes (protected)
+  # OAuth2 routes (protected)
   namespace :auth do
     namespace :qbo do
       get :connect
       get :callback
       delete :disconnect
       get :status
+      get :test_connection
+    end
+
+    namespace :freelancer do
+      get :connect
+      get :callback
+      delete :disconnect
+      get :status
+      get :test_connection
     end
   end
   

@@ -28,10 +28,10 @@ class QboService
     connection = Faraday.new(url: 'https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer') do |conn|
       conn.request :url_encoded
       conn.response :json
-      conn.basic_auth(ENV['QBO_CLIENT_ID'], ENV['QBO_CLIENT_SECRET'])
     end
 
     response = connection.post do |req|
+      req.headers['Authorization'] = "Basic #{Base64.strict_encode64("#{ENV['QBO_CLIENT_ID']}:#{ENV['QBO_CLIENT_SECRET']}")}"
       req.body = {
         'grant_type' => 'refresh_token',
         'refresh_token' => @user.qbo_refresh_token
