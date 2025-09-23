@@ -89,6 +89,59 @@ class User < ApplicationRecord
     )
   end
 
+  # Freelancer integration helpers
+  def freelancer_connected?
+    freelancer_user_id.present? && freelancer_access_token.present?
+  end
+
+  def freelancer_token_expired?
+    freelancer_token_expires_at.present? && freelancer_token_expires_at < Time.current
+  end
+
+  def freelancer_token_valid?
+    freelancer_connected? && !freelancer_token_expired?
+  end
+
+  def freelancer_token_expires_soon?(days_threshold = 7)
+    return false unless freelancer_token_expires_at.present?
+    freelancer_token_expires_at <= days_threshold.days.from_now
+  end
+
+  def freelancer_refresh_token_expired?
+    return true unless freelancer_refresh_token.present?
+    # Assume refresh tokens expire after 6 months from connection
+    return false unless freelancer_connected_at.present?
+    freelancer_connected_at < 6.months.ago
+  end
+
+  def freelancer_needs_refresh?
+    freelancer_connected? && (freelancer_token_expired? || freelancer_token_expires_soon?)
+  end
+
+  def freelancer_can_refresh?
+    freelancer_refresh_token.present? && !freelancer_refresh_token_expired?
+  end
+
+  def freelancer_scopes_array
+    return [] unless freelancer_scopes.present?
+    freelancer_scopes.split(' ')
+  end
+
+  def has_freelancer_scope?(scope)
+    freelancer_scopes_array.include?(scope.to_s)
+  end
+
+  def disconnect_freelancer!
+    update!(
+      freelancer_user_id: nil,
+      freelancer_access_token: nil,
+      freelancer_refresh_token: nil,
+      freelancer_token_expires_at: nil,
+      freelancer_scopes: nil,
+      freelancer_connected_at: nil
+    )
+  end
+
   private
 
   

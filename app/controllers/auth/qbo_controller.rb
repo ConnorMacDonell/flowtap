@@ -38,6 +38,47 @@ class Auth::QboController < ApplicationController
     }
   end
 
+  def test_connection
+    unless current_user.qbo_token_valid?
+      return render json: {
+        success: false,
+        error: 'QBO not connected or token expired. Please reconnect.'
+      }, status: :unauthorized
+    end
+
+    begin
+      qbo_service = QboService.new(current_user)
+
+      # Test basic connection
+      connection_test = qbo_service.test_connection
+
+      if connection_test
+        # Get company info to verify access
+        company_info = qbo_service.api.get(:companyinfo, 1)
+
+        render json: {
+          success: true,
+          message: 'QBO connection successful!',
+          company_name: company_info.dig('Name'),
+          realm_id: current_user.qbo_realm_id,
+          environment: ENV['QBO_ENVIRONMENT'] || 'sandbox'
+        }
+      else
+        render json: {
+          success: false,
+          error: 'Failed to connect to QBO API'
+        }, status: :service_unavailable
+      end
+
+    rescue => e
+      Rails.logger.error "QBO test connection error: #{e.message}"
+      render json: {
+        success: false,
+        error: "Connection failed: #{e.message}"
+      }, status: :service_unavailable
+    end
+  end
+
   private
 
   def qbo_authorization_url

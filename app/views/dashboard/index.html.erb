@@ -53,7 +53,7 @@
               </dt>
               <dd class="text-lg font-medium text-gray-900">
                 <%= @user.subscription_tier_name %>
-                <% if @user.subscription && !@user.subscription.free? %>
+                <% if @user.subscription && @user.subscription.paid? %>
                   <span class="text-sm text-gray-500">($<%= @user.subscription.tier_price %>/mo)</span>
                 <% end %>
               </dd>
@@ -145,6 +145,90 @@
           <p class="text-sm text-gray-500">Get help when you need it</p>
         </div>
       </a>
+    </div>
+  </div>
+
+  <!-- Integrations -->
+  <div class="bg-white shadow rounded-lg p-6 mt-8">
+    <h2 class="text-lg font-medium text-gray-900 mb-4">Integrations</h2>
+    <div class="space-y-4">
+      <!-- QuickBooks Online Integration -->
+      <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+              <svg class="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+              </svg>
+            </div>
+          </div>
+          <div class="ml-3">
+            <p class="text-sm font-medium text-gray-900">QuickBooks Online</p>
+            <p class="text-sm text-gray-500">
+              <% if @user.qbo_connected? %>
+                <span class="text-green-600">Connected</span>
+                <span class="text-gray-400">• Realm ID: <%= @user.qbo_realm_id %></span>
+              <% else %>
+                <span class="text-gray-500">Not connected</span>
+              <% end %>
+            </p>
+          </div>
+        </div>
+        <div class="flex items-center space-x-2">
+          <% if @user.qbo_connected? %>
+            <%= button_to "Test", auth_qbo_test_connection_path,
+                          method: :get, remote: true,
+                          class: "text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded",
+                          data: { confirm: "Test QuickBooks connection?" } %>
+            <%= button_to "Disconnect", auth_qbo_disconnect_path,
+                          method: :delete,
+                          class: "text-sm bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1 rounded",
+                          data: { confirm: "Are you sure you want to disconnect QuickBooks?" } %>
+          <% else %>
+            <%= link_to "Connect", auth_qbo_connect_path,
+                        class: "text-sm bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded" %>
+          <% end %>
+        </div>
+      </div>
+
+      <!-- Freelancer Integration -->
+      <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <div class="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+              <svg class="w-6 h-6 text-orange-600" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+              </svg>
+            </div>
+          </div>
+          <div class="ml-3">
+            <p class="text-sm font-medium text-gray-900">Freelancer</p>
+            <p class="text-sm text-gray-500">
+              <% if @user.freelancer_connected? %>
+                <span class="text-green-600">Connected</span>
+                <span class="text-gray-400">• User ID: <%= @user.freelancer_user_id %></span>
+              <% else %>
+                <span class="text-gray-500">Not connected</span>
+              <% end %>
+            </p>
+          </div>
+        </div>
+        <div class="flex items-center space-x-2">
+          <% if @user.freelancer_connected? %>
+            <%= button_to "Test", auth_freelancer_test_connection_path,
+                          method: :get, remote: true,
+                          class: "text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded",
+                          data: { confirm: "Test Freelancer connection?" } %>
+            <%= button_to "Disconnect", auth_freelancer_disconnect_path,
+                          method: :delete,
+                          class: "text-sm bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1 rounded",
+                          data: { confirm: "Are you sure you want to disconnect Freelancer?" } %>
+          <% else %>
+            <%= link_to "Connect", auth_freelancer_connect_path,
+                        class: "text-sm bg-orange-600 hover:bg-orange-700 text-white px-3 py-1 rounded" %>
+          <% end %>
+        </div>
+      </div>
     </div>
   </div>
 

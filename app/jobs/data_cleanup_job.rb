@@ -46,7 +46,10 @@ class DataCleanupJob < ApplicationJob
     
     # Clean up expired sessions
     cleanup_old_sessions
-    
+
+    # Refresh Freelancer tokens that expire soon
+    refresh_freelancer_tokens
+
     Rails.logger.info "Daily cleanup completed: #{cleanup_count} files removed"
   end
   
@@ -145,5 +148,13 @@ class DataCleanupJob < ApplicationJob
     end
     
     Rails.logger.info "Cleaned up #{cleanup_count} old temporary files"
+  end
+
+  def refresh_freelancer_tokens
+    # Queue the Freelancer token refresh job to run for all users needing refresh
+    FreelancerTokenRefreshJob.perform_later
+    Rails.logger.info "Queued Freelancer token refresh job"
+  rescue StandardError => e
+    Rails.logger.error "Failed to queue Freelancer token refresh job: #{e.message}"
   end
 end
