@@ -127,7 +127,7 @@ class Auth::FreelancerController < ApplicationController
       'response_type' => 'code',
       'client_id' => freelancer_client_id,
       'redirect_uri' => freelancer_redirect_uri,
-      'scope' => 'basic',
+      'scope' => 'basic fln:project_manage',
       'prompt' => 'consent',
       'state' => state
     }
