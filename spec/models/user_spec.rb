@@ -305,5 +305,133 @@ RSpec.describe User, type: :model do
         end
       end
     end
+
+    # Freelancer Integration Tests
+    describe '#freelancer_connected?' do
+      it 'returns false when user has no freelancer connection' do
+        expect(user.freelancer_connected?).to be false
+      end
+
+      it 'returns false when user has partial freelancer connection' do
+        user.update(freelancer_user_id: '12345')
+        expect(user.freelancer_connected?).to be false
+      end
+
+      it 'returns true when user has complete freelancer connection' do
+        user.update(
+          freelancer_user_id: '12345',
+          freelancer_access_token: 'token123'
+        )
+        expect(user.freelancer_connected?).to be true
+      end
+    end
+
+    describe '#freelancer_token_expired?' do
+      it 'returns false when no expiration time is set' do
+        expect(user.freelancer_token_expired?).to be false
+      end
+
+      it 'returns true when token has expired' do
+        user.update(freelancer_token_expires_at: 1.hour.ago)
+        expect(user.freelancer_token_expired?).to be true
+      end
+
+      it 'returns false when token has not expired' do
+        user.update(freelancer_token_expires_at: 1.hour.from_now)
+        expect(user.freelancer_token_expired?).to be false
+      end
+    end
+
+    describe '#freelancer_token_valid?' do
+      it 'returns false when not connected' do
+        expect(user.freelancer_token_valid?).to be false
+      end
+
+      it 'returns false when connected but token expired' do
+        user.update(
+          freelancer_user_id: '12345',
+          freelancer_access_token: 'token123',
+          freelancer_token_expires_at: 1.hour.ago
+        )
+        expect(user.freelancer_token_valid?).to be false
+      end
+
+      it 'returns true when connected and token valid' do
+        user.update(
+          freelancer_user_id: '12345',
+          freelancer_access_token: 'token123',
+          freelancer_token_expires_at: 1.hour.from_now
+        )
+        expect(user.freelancer_token_valid?).to be true
+      end
+    end
+
+    describe '#freelancer_scopes_array' do
+      it 'returns empty array when no scopes set' do
+        expect(user.freelancer_scopes_array).to eq([])
+      end
+
+      it 'returns empty array when scopes is empty string' do
+        user.update(freelancer_scopes: '')
+        expect(user.freelancer_scopes_array).to eq([])
+      end
+
+      it 'returns array of scopes when scopes are set' do
+        user.update(freelancer_scopes: 'basic 1 2 3')
+        expect(user.freelancer_scopes_array).to eq(['basic', '1', '2', '3'])
+      end
+    end
+
+    describe '#has_freelancer_scope?' do
+      before do
+        user.update(freelancer_scopes: 'basic 1 2 5')
+      end
+
+      it 'returns true when user has the specified scope' do
+        expect(user.has_freelancer_scope?('basic')).to be true
+        expect(user.has_freelancer_scope?(1)).to be true
+        expect(user.has_freelancer_scope?('2')).to be true
+      end
+
+      it 'returns false when user does not have the specified scope' do
+        expect(user.has_freelancer_scope?('3')).to be false
+        expect(user.has_freelancer_scope?(4)).to be false
+      end
+
+      it 'returns false when no scopes are set' do
+        user.update(freelancer_scopes: nil)
+        expect(user.has_freelancer_scope?('basic')).to be false
+      end
+    end
+
+    describe '#disconnect_freelancer!' do
+      before do
+        user.update(
+          freelancer_user_id: '12345',
+          freelancer_access_token: 'token123',
+          freelancer_refresh_token: 'refresh123',
+          freelancer_token_expires_at: 1.hour.from_now,
+          freelancer_scopes: 'basic 1 2 3',
+          freelancer_connected_at: Time.current
+        )
+      end
+
+      it 'clears all Freelancer-related fields' do
+        user.disconnect_freelancer!
+        user.reload
+
+        expect(user.freelancer_user_id).to be_nil
+        expect(user.freelancer_access_token).to be_nil
+        expect(user.freelancer_refresh_token).to be_nil
+        expect(user.freelancer_token_expires_at).to be_nil
+        expect(user.freelancer_scopes).to be_nil
+        expect(user.freelancer_connected_at).to be_nil
+      end
+
+      it 'makes freelancer_connected? return false' do
+        user.disconnect_freelancer!
+        expect(user.freelancer_connected?).to be false
+      end
+    end
   end
 end
