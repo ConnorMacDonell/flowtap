@@ -34,6 +34,37 @@ class FreelancerService
     false
   end
 
+  # Financial data methods for project owners
+  def get_financial_milestones(limit: 50)
+    make_request('GET', "/api/projects/0.1/milestones/?project_owners[]=#{@user.freelancer_user_id}&limit=#{limit}&user_details=true&user_financial_details=true")
+  end
+
+  def get_projects_with_financial_details(limit: 50)
+    make_request('GET', "/api/projects/0.1/projects/?owners[]=#{@user.freelancer_user_id}&limit=#{limit}&user_details=true&user_financial_details=true&selected_bids=true")
+  end
+
+  def get_hourly_contracts(limit: 50)
+    make_request('GET', "/api/projects/0.1/hourly_contracts/?project_owner_ids[]=#{@user.freelancer_user_id}&limit=#{limit}&billing_details=true&invoice_details=true")
+  end
+
+  def get_comprehensive_financial_summary
+    # Get milestones (payments made)
+    milestones = get_financial_milestones
+
+    # Get projects with bid details
+    projects = get_projects_with_financial_details
+
+    # Get hourly contracts and invoices
+    hourly_contracts = get_hourly_contracts
+
+    {
+      milestones: process_milestone_data(milestones),
+      projects: process_project_data(projects),
+      hourly_contracts: process_hourly_contract_data(hourly_contracts),
+      summary: calculate_comprehensive_financial_summary(milestones, projects, hourly_contracts)
+    }
+  end
+
   def refresh_token!
     return false unless @user.freelancer_can_refresh?
 
@@ -88,6 +119,146 @@ class FreelancerService
   end
 
   private
+
+  def process_milestone_data(milestones_response)
+    return [] unless milestones_response&.dig('result', 'milestones')
+
+    milestones_response['result']['milestones'].map do |milestone|
+      {
+        id: milestone['id'],
+        amount: milestone['amount'],
+        currency: milestone.dig('currency', 'code'),
+        status: milestone['status'],
+        description: milestone['description'],
+        created_at: milestone['time_created'],
+        released_at: milestone['time_released'],
+        project_id: milestone['project_id'],
+        freelancer_id: milestone['bidder_id'],
+        freelancer_name: milestone.dig('bidder', 'display_name') || milestone.dig('bidder', 'username')
+      }
+    end
+  end
+
+  def process_project_data(projects_response)
+    return [] unless projects_response&.dig('result', 'projects')
+
+    projects_response['result']['projects'].map do |project|
+      selected_bid = project.dig('selected_bids', 0) # Get the winning bid
+
+      {
+        id: project['id'],
+        title: project['title'],
+        description: project['description'],
+        status: project['status'],
+        budget_min: project.dig('budget', 'minimum'),
+        budget_max: project.dig('budget', 'maximum'),
+        currency: project.dig('currency', 'code'),
+        created_at: project['submit_date'],
+        selected_bid: selected_bid ? {
+          amount: selected_bid['amount'],
+          freelancer_id: selected_bid['bidder_id'],
+          freelancer_name: selected_bid.dig('bidder', 'display_name') || selected_bid.dig('bidder', 'username')
+        } : nil
+      }
+    end
+  end
+
+  def process_hourly_contract_data(contracts_response)
+    return [] unless contracts_response&.dig('result', 'hourly_contracts')
+
+    contracts_response['result']['hourly_contracts'].map do |contract|
+      invoices = contract['invoices'] || []
+
+      {
+        id: contract['id'],
+        project_id: contract['project_id'],
+        freelancer_id: contract['bidder_id'],
+        project_title: contract.dig('project', 'title'),
+        freelancer_name: contract.dig('bidder', 'display_name') || contract.dig('bidder', 'username'),
+        hourly_rate: contract['amount'],
+        currency: contract.dig('currency', 'code'),
+        status: contract['status'],
+        total_hours: invoices.sum { |inv| inv['hours'] || 0 },
+        total_amount: invoices.sum { |inv| inv['amount'] || 0 },
+        invoices: invoices.map do |invoice|
+          {
+            id: invoice['id'],
+            amount: invoice['amount'],
+            hours: invoice['hours'],
+            description: invoice['description'],
+            status: invoice['status'],
+            created_at: invoice['time_created'],
+            paid_at: invoice['time_paid']
+          }
+        end
+      }
+    end
+  end
+
+  def calculate_financial_summary(milestones_response, projects_response)
+    milestones = process_milestone_data(milestones_response)
+
+    total_paid = milestones.sum { |m| m[:amount] || 0 }
+    total_pending = milestones.select { |m| m[:status] == 'pending' }.sum { |m| m[:amount] || 0 }
+    total_released = milestones.select { |m| m[:status] == 'cleared' }.sum { |m| m[:amount] || 0 }
+
+    {
+      total_projects: process_project_data(projects_response).count,
+      total_milestones: milestones.count,
+      total_amount_paid: total_paid,
+      total_pending_payments: total_pending,
+      total_released_payments: total_released,
+      unique_freelancers_paid: milestones.map { |m| m[:freelancer_id] }.uniq.compact.count
+    }
+  end
+
+  def calculate_comprehensive_financial_summary(milestones_response, projects_response, hourly_contracts_response)
+    milestones = process_milestone_data(milestones_response)
+    hourly_contracts = process_hourly_contract_data(hourly_contracts_response)
+
+    # Milestone totals
+    milestone_total = milestones.sum { |m| m[:amount] || 0 }
+    milestone_pending = milestones.select { |m| m[:status] == 'pending' }.sum { |m| m[:amount] || 0 }
+    milestone_released = milestones.select { |m| m[:status] == 'cleared' }.sum { |m| m[:amount] || 0 }
+
+    # Hourly contract totals
+    hourly_total = hourly_contracts.sum { |c| c[:total_amount] || 0 }
+    hourly_hours = hourly_contracts.sum { |c| c[:total_hours] || 0 }
+
+    # Combined totals
+    all_freelancer_ids = (
+      milestones.map { |m| m[:freelancer_id] } +
+      hourly_contracts.map { |c| c[:freelancer_id] }
+    ).uniq.compact
+
+    {
+      # Project counts
+      total_projects: process_project_data(projects_response).count,
+      total_fixed_projects: milestones.map { |m| m[:project_id] }.uniq.count,
+      total_hourly_projects: hourly_contracts.count,
+
+      # Milestone payments
+      total_milestones: milestones.count,
+      milestone_total_paid: milestone_total,
+      milestone_pending: milestone_pending,
+      milestone_released: milestone_released,
+
+      # Hourly payments
+      total_hourly_contracts: hourly_contracts.count,
+      hourly_total_paid: hourly_total,
+      total_hours_worked: hourly_hours,
+
+      # Combined totals
+      grand_total_paid: milestone_total + hourly_total,
+      unique_freelancers_paid: all_freelancer_ids.count,
+
+      # Payment method breakdown
+      payment_breakdown: {
+        milestones: milestone_total,
+        hourly: hourly_total
+      }
+    }
+  end
 
   def make_request(method, path, params = {})
     # Ensure we have a valid token before making request
