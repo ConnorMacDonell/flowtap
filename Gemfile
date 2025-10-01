@@ -51,6 +51,9 @@ gem 'stripe'
 # Email service
 gem 'sendgrid-ruby'
 
+# HTTP client for API integrations
+gem 'faraday'
+
 # QuickBooks Online API integration
 gem 'qbo_api'
 
@@ -75,6 +78,9 @@ gem "nokogiri", "~> 1.16.0"
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
   gem "debug", platforms: %i[ mri windows ]
+
+  # Load environment variables from .env file
+  gem 'dotenv-rails'
 end
 
 group :development do
