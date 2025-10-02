@@ -15,9 +15,15 @@ class Users::RegistrationsController < Devise::RegistrationsController
     resource.save
     yield resource if block_given?
     if resource.persisted?
+      # Record EULA and Privacy Policy acceptance timestamps
+      resource.update!(
+        eula_accepted_at: Time.current,
+        privacy_policy_accepted_at: Time.current
+      )
+
       # Create initial subscription record for tracking
       resource.create_subscription!(status: 'inactive') unless resource.subscription
-      
+
       # Create Stripe customer for payment processing
       ensure_stripe_customer!(resource)
       
@@ -83,7 +89,7 @@ class Users::RegistrationsController < Devise::RegistrationsController
 
   # If you have extra params to permit, append them to the sanitizer.
   def configure_sign_up_params
-    devise_parameter_sanitizer.permit(:sign_up, keys: [:first_name, :last_name, :timezone])
+    devise_parameter_sanitizer.permit(:sign_up, keys: [:first_name, :last_name, :timezone, :eula_accepted])
   end
 
   # If you have extra params to permit, append them to the sanitizer.
