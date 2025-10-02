@@ -180,13 +180,14 @@
                           method: :get, remote: true,
                           class: "text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded",
                           data: { confirm: "Test QuickBooks connection?" } %>
-            <%= button_to "Disconnect", auth_qbo_disconnect_path,
+            <%= button_to "Disconnect from QuickBooks", auth_qbo_disconnect_path,
                           method: :delete,
                           class: "text-sm bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1 rounded",
-                          data: { confirm: "Are you sure you want to disconnect QuickBooks?" } %>
+                          data: { confirm: "Are you sure you want to disconnect from QuickBooks?" } %>
           <% else %>
-            <%= link_to "Connect", auth_qbo_connect_path,
-                        class: "text-sm bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded" %>
+            <%= link_to auth_qbo_connect_path, class: "qbo-connect-button block transition-opacity hover:opacity-80" do %>
+              <%= image_tag "qbo/C2QB_green_btn_short_default.svg", alt: "Connect to QuickBooks", class: "h-8" %>
+            <% end %>
           <% end %>
         </div>
       </div>
@@ -219,13 +220,16 @@
                           method: :get, remote: true,
                           class: "text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded",
                           data: { confirm: "Test Freelancer connection?" } %>
-            <%= button_to "Disconnect", auth_freelancer_disconnect_path,
+            <%= button_to "Disconnect from Freelancer", auth_freelancer_disconnect_path,
                           method: :delete,
                           class: "text-sm bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1 rounded",
-                          data: { confirm: "Are you sure you want to disconnect Freelancer?" } %>
+                          data: { confirm: "Are you sure you want to disconnect from Freelancer?" } %>
           <% else %>
-            <%= link_to "Connect", auth_freelancer_connect_path,
-                        class: "text-sm bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded" %>
+            <%= link_to auth_freelancer_connect_path, class: "block transition-opacity hover:opacity-80" do %>
+              <span class="inline-flex items-center justify-center h-8 border border-transparent text-base font-normal rounded text-white" style="background-color: #2CA01C; width: 217px;">
+                Connect to Freelancer
+              </span>
+            <% end %>
           <% end %>
         </div>
       </div>
