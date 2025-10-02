@@ -53,26 +53,29 @@
         <%= f.select :timezone, options_for_select([
           ["UTC", "UTC"],
           ["Eastern Time", "America/New_York"],
-          ["Central Time", "America/Chicago"], 
+          ["Central Time", "America/Chicago"],
           ["Mountain Time", "America/Denver"],
           ["Pacific Time", "America/Los_Angeles"]
         ], "UTC"), {}, { class: "mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" } %>
       </div>
 
+      <div class="flex items-start">
+        <div class="flex items-center h-5">
+          <%= f.check_box :eula_accepted, id: "terms_accepted", required: true,
+                          class: "h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" %>
+        </div>
+        <div class="ml-3 text-sm">
+          <%= f.label :eula_accepted, class: "font-medium text-gray-700" do %>
+            I agree to the <%= link_to "End-User License Agreement", eula_path, target: "_blank", class: "text-blue-600 hover:text-blue-500 underline" %> and <%= link_to "Privacy Policy", privacy_path, target: "_blank", class: "text-blue-600 hover:text-blue-500 underline" %>
+            <span class="text-red-600">*</span>
+          <% end %>
+        </div>
+      </div>
 
       <div>
-        <%= f.submit "Create Account", 
+        <%= f.submit "Create Account",
                      class: "group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out" %>
       </div>
     <% end %>
-
-    <div class="text-center">
-      <p class="text-xs text-gray-500">
-        By creating an account, you agree to our 
-        <%= link_to "Terms of Service", "#", class: "text-blue-600 hover:text-blue-500" %> 
-        and 
-        <%= link_to "Privacy Policy", "#", class: "text-blue-600 hover:text-blue-500" %>.
-      </p>
-    </div>
   </div>
 </div>
