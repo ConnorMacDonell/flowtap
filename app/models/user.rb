@@ -13,6 +13,11 @@ class User < ApplicationRecord
   validates :last_name, presence: true, length: { maximum: 50 }
   validates :timezone, presence: true
 
+  # Virtual attribute for EULA acceptance
+  attr_accessor :eula_accepted
+
+  validate :eula_must_be_accepted, on: :create
+
   # Callbacks
   after_update :send_welcome_email, if: :confirmed_at_previously_changed?
 
@@ -160,7 +165,12 @@ class User < ApplicationRecord
 
   private
 
-  
+  def eula_must_be_accepted
+    unless eula_accepted == '1' || eula_accepted == true
+      errors.add(:eula_accepted, "You must agree to the EULA and Privacy Policy to create an account")
+    end
+  end
+
   def send_welcome_email
     return unless confirmed_at.present? && confirmed_at_previously_changed?
     UserMailer.welcome_email(self).deliver_now
