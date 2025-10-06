@@ -1,13 +1,24 @@
 class QboService
+  class QboApiError < StandardError
+    attr_reader :error_code, :error_detail, :intuit_tid
+
+    def initialize(message, error_code: nil, error_detail: nil, intuit_tid: nil)
+      super(message)
+      @error_code = error_code
+      @error_detail = error_detail
+      @intuit_tid = intuit_tid
+    end
+  end
+
   def initialize(user)
     @user = user
     raise ArgumentError, 'User must have valid QBO connection' unless @user.qbo_token_valid?
-    
+
     @qbo_api = QboApi.new(
       access_token: @user.qbo_access_token,
       realm_id: @user.qbo_realm_id
     )
-    
+
     # Configure for production or sandbox
     QboApi.production = (ENV['QBO_ENVIRONMENT'] == 'production')
   end
@@ -17,8 +28,13 @@ class QboService
   end
 
   def test_connection
-    @qbo_api.get(:companyinfo, 1).present?
-  rescue
+    response = @qbo_api.get(:companyinfo, 1)
+    response.present?
+  rescue QboApi::Error => e
+    log_qbo_error('test_connection', e)
+    false
+  rescue => e
+    log_error('test_connection', e)
     false
   end
 
@@ -45,18 +61,101 @@ class QboService
         qbo_refresh_token: token_data['refresh_token'] || @user.qbo_refresh_token,
         qbo_token_expires_at: Time.current + token_data['expires_in'].seconds
       )
-      
+
       # Update the API client with new token
       @qbo_api = QboApi.new(
         access_token: @user.qbo_access_token,
         realm_id: @user.qbo_realm_id
       )
-      
+
+      Rails.logger.info("QBO token refreshed successfully for user #{@user.id}")
       true
     else
+      handle_token_refresh_error(response)
       false
     end
-  rescue
+  rescue Faraday::Error => e
+    log_error('refresh_token', e)
     false
+  rescue => e
+    log_error('refresh_token', e)
+    false
+  end
+
+  private
+
+  def handle_token_refresh_error(response)
+    error_body = response.body
+    error_code = error_body['error'] if error_body.is_a?(Hash)
+
+    # Log detailed error information
+    log_data = {
+      user_id: @user.id,
+      error_code: error_code,
+      error_description: error_body.is_a?(Hash) ? error_body['error_description'] : error_body,
+      status: response.status,
+      timestamp: Time.current
+    }
+
+    # Handle specific error cases
+    case error_code
+    when 'invalid_grant'
+      Rails.logger.error("QBO invalid_grant error - refresh token expired or revoked: #{log_data.to_json}")
+      # User needs to reconnect their QBO account
+      @user.update(qbo_refresh_token: nil) # Clear invalid refresh token
+    else
+      Rails.logger.error("QBO token refresh failed: #{log_data.to_json}")
+    end
+  end
+
+  def log_qbo_error(method_name, error)
+    intuit_tid = extract_intuit_tid(error)
+
+    log_data = {
+      service: 'QboService',
+      method: method_name,
+      user_id: @user.id,
+      error_class: error.class.name,
+      error_message: error.message,
+      intuit_tid: intuit_tid,
+      timestamp: Time.current
+    }
+
+    Rails.logger.error("QBO API error: #{log_data.to_json}")
+
+    # Create audit log entry for security/compliance
+    AuditLog.create(
+      user_id: @user.id,
+      action: 'qbo_api_error',
+      metadata: log_data.merge(intuit_tid: intuit_tid)
+    ) rescue nil
+  end
+
+  def log_error(method_name, error)
+    log_data = {
+      service: 'QboService',
+      method: method_name,
+      user_id: @user.id,
+      error_class: error.class.name,
+      error_message: error.message,
+      backtrace: error.backtrace&.first(5),
+      timestamp: Time.current
+    }
+
+    Rails.logger.error("QBO Service error: #{log_data.to_json}")
+  end
+
+  def extract_intuit_tid(error)
+    # Try to extract intuit_tid from error response if available
+    return nil unless error.respond_to?(:response)
+
+    response = error.response
+    if response.is_a?(Hash) && response['Fault']
+      response['Fault']['intuit_tid']
+    elsif response.respond_to?(:headers)
+      response.headers['intuit_tid']
+    end
+  rescue
+    nil
   end
 end
