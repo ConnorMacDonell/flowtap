@@ -62,7 +62,7 @@ class QboService
         qbo_token_expires_at: Time.current + token_data['expires_in'].seconds
       )
 
-      # Update the API client with new token
+      # Update the API client with new refresh token
       @qbo_api = QboApi.new(
         access_token: @user.qbo_access_token,
         realm_id: @user.qbo_realm_id
