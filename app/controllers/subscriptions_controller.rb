@@ -1,5 +1,6 @@
 class SubscriptionsController < ApplicationController
   before_action :authenticate_user!
+  skip_before_action :check_subscription_status, only: [:success]
 
   def index
     @current_subscription = current_user.subscription
@@ -52,12 +53,18 @@ class SubscriptionsController < ApplicationController
   end
 
   def success
+    # Reload user to get latest subscription status in case webhook already processed
+    current_user.reload
+
     if current_user.has_active_subscription?
       flash[:success] = "Welcome! Your subscription is now active."
+      redirect_to dashboard_path
     else
-      flash[:notice] = "Payment successful! Your subscription is being activated."
+      # Payment successful but webhook hasn't processed yet
+      # Show a waiting page instead of redirecting immediately
+      flash.now[:notice] = "Payment successful! Activating your subscription..."
+      render :success
     end
-    redirect_to dashboard_path
   end
 
   def cancel_payment
