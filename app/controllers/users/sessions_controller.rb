@@ -25,6 +25,12 @@ class Users::SessionsController < Devise::SessionsController
 
   # The path used after signing in.
   def after_sign_in_path_for(resource)
+    # If user doesn't have active subscription, redirect to subscription page
+    # This avoids a double redirect which causes issues with Turbo
+    unless resource.has_active_subscription?
+      return new_subscription_path
+    end
+
     stored_location_for(resource) || dashboard_path
   end
 

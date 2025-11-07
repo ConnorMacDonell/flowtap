@@ -18,20 +18,8 @@ class SubscriptionsController < ApplicationController
       return
     end
 
-    # Create Checkout Session using service
-    checkout_service = StripeCheckoutService.new(
-      current_user,
-      success_url: success_subscriptions_url,
-      cancel_url: cancel_payment_subscriptions_url
-    )
-
-    checkout_url = checkout_service.create_checkout_session
-
-    if checkout_url
-      redirect_to checkout_url, allow_other_host: true
-    else
-      redirect_to subscriptions_path, alert: 'Payment system unavailable. Please try again later.'
-    end
+    # Render subscription landing page - user will click button to proceed to Stripe
+    @subscription_tier = Subscription::TIERS['paid']
   end
 
   def create

@@ -1,0 +1,71 @@
+<div class="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-3xl mx-auto">
+    <!-- Header -->
+    <div class="text-center mb-12">
+      <h1 class="text-4xl font-extrabold text-gray-900 mb-4">
+        Welcome to FlowTap Pro
+      </h1>
+      <p class="text-xl text-gray-600">
+        Subscribe now to access all features and start managing your freelance finances
+      </p>
+    </div>
+
+    <!-- Subscription Card -->
+    <div class="bg-white shadow-xl rounded-lg overflow-hidden">
+      <div class="px-6 py-8 bg-gradient-to-r from-blue-600 to-blue-700 text-white">
+        <h2 class="text-3xl font-bold mb-2"><%= @subscription_tier[:name] %> Plan</h2>
+        <div class="flex items-baseline">
+          <span class="text-5xl font-extrabold">$<%= @subscription_tier[:price] %></span>
+          <span class="text-2xl ml-2">/month</span>
+        </div>
+      </div>
+
+      <div class="px-6 py-8">
+        <!-- Features List -->
+        <div class="mb-8">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">What's included:</h3>
+          <ul class="space-y-3">
+            <% @subscription_tier[:features].each do |feature| %>
+              <li class="flex items-start">
+                <svg class="h-6 w-6 text-green-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <span class="text-gray-700"><%= feature %></span>
+              </li>
+            <% end %>
+          </ul>
+        </div>
+
+        <!-- Subscribe Button -->
+        <%= form_with url: subscriptions_path, method: :post, local: true, data: { turbo: false } do |f| %>
+          <div class="space-y-4">
+            <%= f.submit "Subscribe Now",
+                         class: "w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-lg font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out cursor-pointer" %>
+
+            <p class="text-sm text-gray-500 text-center">
+              You'll be redirected to our secure payment processor (Stripe) to complete your subscription.
+            </p>
+          </div>
+        <% end %>
+      </div>
+
+      <!-- Security Notice -->
+      <div class="px-6 py-4 bg-gray-50 border-t border-gray-200">
+        <div class="flex items-center text-sm text-gray-600">
+          <svg class="h-5 w-5 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+          </svg>
+          <span>Secure payment processing powered by Stripe. Cancel anytime.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Additional Info -->
+    <div class="mt-8 text-center">
+      <p class="text-sm text-gray-600">
+        Have questions? <%= link_to "Contact support", "#", class: "text-blue-600 hover:text-blue-500 font-medium" %> or
+        <%= link_to "view pricing details", subscriptions_path, class: "text-blue-600 hover:text-blue-500 font-medium" %>
+      </p>
+    </div>
+  </div>
+</div>
