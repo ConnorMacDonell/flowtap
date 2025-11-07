@@ -1,8 +1,8 @@
 class FreelancerTokenRefreshJob < ApplicationJob
   queue_as :default
 
-  # Retry failed token refreshes with exponential backoff
-  retry_on StandardError, wait: :exponentially_longer, attempts: 3
+  # Retry failed token refreshes with polynomial backoff
+  retry_on StandardError, wait: :polynomially_longer, attempts: 3
 
   # Don't retry if the user record is deleted
   discard_on ActiveJob::DeserializationError
