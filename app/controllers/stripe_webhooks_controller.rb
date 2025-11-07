@@ -1,9 +1,10 @@
 class StripeWebhooksController < ApplicationController
   # Skip CSRF verification for webhooks
   skip_before_action :verify_authenticity_token
-  
+
   # No authentication needed - we verify with signature
   skip_before_action :authenticate_user!, if: -> { defined?(authenticate_user!) }
+  skip_before_action :check_subscription_status
 
   def create
     payload = request.body.read
