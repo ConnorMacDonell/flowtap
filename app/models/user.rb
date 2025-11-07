@@ -29,6 +29,20 @@ class User < ApplicationRecord
 
   # Soft delete
   def soft_delete!
+    # Cancel Stripe subscription BEFORE deleting account
+    # This is synchronous and will raise an error if it fails
+    if subscription&.stripe_subscription_id.present?
+      service = StripeSubscriptionService.new(self)
+      begin
+        service.cancel_subscription(immediate: true)
+      rescue Stripe::StripeError => e
+        # If Stripe cancellation fails, prevent account deletion
+        raise ActiveRecord::RecordInvalid.new(self),
+              "Cannot delete account: Failed to cancel subscription. Please try again later or contact support."
+      end
+    end
+
+    # Only proceed with deletion if subscription was cancelled (or didn't exist)
     update!(deleted_at: Time.current)
   end
 
