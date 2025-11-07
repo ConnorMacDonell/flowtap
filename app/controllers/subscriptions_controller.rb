@@ -29,14 +29,12 @@ class SubscriptionsController < ApplicationController
       return
     end
 
-    # Create Checkout Session using service
-    checkout_service = StripeCheckoutService.new(
-      current_user,
+    # Create Checkout Session using subscription service
+    subscription_service = StripeSubscriptionService.new(current_user)
+    checkout_url = subscription_service.create_checkout_session(
       success_url: success_subscriptions_url,
       cancel_url: cancel_payment_subscriptions_url
     )
-
-    checkout_url = checkout_service.create_checkout_session
 
     if checkout_url
       redirect_to checkout_url, allow_other_host: true
@@ -66,22 +64,19 @@ class SubscriptionsController < ApplicationController
 
   def cancel
     @subscription = current_user.subscription
-    
+
     unless @subscription&.active?
       redirect_to subscriptions_path, alert: 'No active subscription to cancel'
       return
     end
 
-    # Cancel the Stripe subscription
-    if @subscription.stripe_subscription_id.present?
-      begin
-        Stripe::Subscription.cancel(@subscription.stripe_subscription_id)
-        redirect_to subscriptions_path, notice: 'Subscription cancelled successfully!'
-      rescue Stripe::StripeError => e
-        redirect_to subscriptions_path, alert: "Error cancelling subscription: #{e.message}"
-      end
+    # Cancel the Stripe subscription using service
+    subscription_service = StripeSubscriptionService.new(current_user)
+
+    if subscription_service.cancel_subscription(immediate: false)
+      redirect_to subscriptions_path, notice: 'Subscription cancelled successfully!'
     else
-      redirect_to subscriptions_path, alert: 'No active subscription to cancel'
+      redirect_to subscriptions_path, alert: 'Error cancelling subscription. Please try again or contact support.'
     end
   end
 

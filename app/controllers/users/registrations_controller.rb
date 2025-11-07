@@ -55,19 +55,26 @@ class Users::RegistrationsController < Devise::RegistrationsController
       email: resource.email,
       deleted_at: Time.current
     }
-    
-    # Implement soft delete instead of hard delete
-    resource.soft_delete!
-    
-    # Send account deletion email
-    UserMailer.account_deleted(user_data).deliver_now
-    # TODO use background job
-    # EmailJob.perform_later('UserMailer', 'account_deleted', user_data)
-    
-    Devise.sign_out_all_scopes ? sign_out : sign_out(resource_name)
-    set_flash_message! :notice, :destroyed
-    yield resource if block_given?
-    respond_with_navigational(resource){ redirect_to after_sign_out_path_for(resource_name) }
+
+    begin
+      # Implement soft delete instead of hard delete
+      # This will cancel Stripe subscription first
+      resource.soft_delete!
+
+      # Send account deletion email
+      UserMailer.account_deleted(user_data).deliver_now
+      # TODO use background job
+      # EmailJob.perform_later('UserMailer', 'account_deleted', user_data)
+
+      Devise.sign_out_all_scopes ? sign_out : sign_out(resource_name)
+      set_flash_message! :notice, :destroyed
+      yield resource if block_given?
+      respond_with_navigational(resource){ redirect_to after_sign_out_path_for(resource_name) }
+    rescue ActiveRecord::RecordInvalid => e
+      # Handle subscription cancellation failure
+      flash[:alert] = e.message
+      redirect_to edit_user_registration_path
+    end
   end
 
   # GET /resource/cancel
@@ -110,13 +117,11 @@ class Users::RegistrationsController < Devise::RegistrationsController
   private
 
   def create_checkout_session_url(user)
-    checkout_service = StripeCheckoutService.new(
-      user,
+    subscription_service = StripeSubscriptionService.new(user)
+    checkout_url = subscription_service.create_checkout_session(
       success_url: success_subscriptions_url,
       cancel_url: cancel_payment_subscriptions_url
     )
-
-    checkout_url = checkout_service.create_checkout_session
 
     # Fallback to dashboard if Stripe checkout fails
     checkout_url || dashboard_url
