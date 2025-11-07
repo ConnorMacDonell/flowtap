@@ -55,13 +55,9 @@ class ApplicationController < ActionController::Base
     # Skip check if user has active subscription
     return if current_user.has_active_subscription?
 
-    # Use Stripe payment link configured in dashboard
-    # Success URL must be configured in Stripe Dashboard -> Payment Links
-    payment_link = ENV['STRIPE_STANDARD_PAYMENT_LINK'] || 'https://buy.stripe.com/test_placeholder'
-
-    # Redirect to payment page with message
+    # Redirect to subscription page which will create checkout session
     flash[:alert] = "Please complete your subscription to access the application."
-    redirect_to payment_link, allow_other_host: true
+    redirect_to new_subscription_path
   end
   
   def handle_standard_error(error)

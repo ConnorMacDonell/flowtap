@@ -1,6 +1,6 @@
 class SubscriptionsController < ApplicationController
   before_action :authenticate_user!
-  skip_before_action :check_subscription_status, only: [:success]
+  skip_before_action :check_subscription_status, only: [:index, :show, :new, :create, :success, :cancel_payment]
 
   def index
     @current_subscription = current_user.subscription
@@ -12,41 +12,46 @@ class SubscriptionsController < ApplicationController
   end
 
   def new
-    @subscription = current_user.subscription
-    
     # Check if user already has active subscription
-    if @subscription&.active?
+    if current_user.has_active_subscription?
       redirect_to subscriptions_path, notice: 'You already have an active subscription'
       return
     end
-    
-    # Create subscription if it doesn't exist or is canceled
-    unless @subscription
-      @subscription = current_user.create_subscription!(status: 'inactive')
+
+    # Create Checkout Session using service
+    checkout_service = StripeCheckoutService.new(
+      current_user,
+      success_url: success_subscriptions_url,
+      cancel_url: cancel_payment_subscriptions_url
+    )
+
+    checkout_url = checkout_service.create_checkout_session
+
+    if checkout_url
+      redirect_to checkout_url, allow_other_host: true
+    else
+      redirect_to subscriptions_path, alert: 'Payment system unavailable. Please try again later.'
     end
   end
 
   def create
-    @subscription = current_user.subscription
-
     # Check if user already has active subscription
-    if @subscription&.active?
+    if current_user.has_active_subscription?
       redirect_to subscriptions_path, alert: 'You already have an active subscription'
       return
     end
-    
-    # Create subscription if it doesn't exist
-    unless @subscription
-      @subscription = current_user.create_subscription!(status: 'inactive')
-    end
 
-    # Create or update Stripe customer
-    ensure_stripe_customer!
+    # Create Checkout Session using service
+    checkout_service = StripeCheckoutService.new(
+      current_user,
+      success_url: success_subscriptions_url,
+      cancel_url: cancel_payment_subscriptions_url
+    )
 
-    # Redirect to Stripe payment link
-    payment_link_url = ENV['STRIPE_STANDARD_PAYMENT_LINK']
-    if payment_link_url.present?
-      redirect_to payment_link_url, allow_other_host: true
+    checkout_url = checkout_service.create_checkout_session
+
+    if checkout_url
+      redirect_to checkout_url, allow_other_host: true
     else
       redirect_to subscriptions_path, alert: 'Payment system unavailable. Please try again later.'
     end
@@ -91,26 +96,5 @@ class SubscriptionsController < ApplicationController
       redirect_to subscriptions_path, alert: 'No active subscription to cancel'
     end
   end
-
-  private
-
-  def ensure_stripe_customer!
-    return if current_user.stripe_customer_id.present?
-
-    begin
-      customer = Stripe::Customer.create(
-        email: current_user.email,
-        name: "#{current_user.first_name} #{current_user.last_name}".strip,
-        metadata: {
-          user_id: current_user.id
-        }
-      )
-      current_user.update!(stripe_customer_id: customer.id)
-    rescue Stripe::StripeError => e
-      Rails.logger.error "Failed to create Stripe customer: #{e.message}"
-      raise
-    end
-  end
-
 
 end

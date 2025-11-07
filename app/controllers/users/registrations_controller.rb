@@ -21,12 +21,6 @@ class Users::RegistrationsController < Devise::RegistrationsController
         privacy_policy_accepted_at: Time.current
       )
 
-      # Create initial subscription record for tracking
-      resource.create_subscription!(status: 'inactive') unless resource.subscription
-
-      # Create Stripe customer for payment processing
-      ensure_stripe_customer!(resource)
-      
       if resource.active_for_authentication?
         set_flash_message! :notice, :signed_up
         sign_up(resource_name, resource)
@@ -101,7 +95,7 @@ class Users::RegistrationsController < Devise::RegistrationsController
   def after_sign_up_path_for(resource)
     if resource.persisted?
       flash[:notice] = "Welcome! Please check your email to confirm your account and complete your subscription."
-      stripe_payment_link
+      create_checkout_session_url(resource)
     else
       new_user_registration_path
     end
@@ -110,33 +104,22 @@ class Users::RegistrationsController < Devise::RegistrationsController
   # The path used after sign up for inactive accounts.
   def after_inactive_sign_up_path_for(resource)
     flash[:notice] = "Please check your email to confirm your account and complete your subscription."
-    stripe_payment_link
+    create_checkout_session_url(resource)
   end
 
   private
 
-  def stripe_payment_link
-    # Build Stripe payment link with success URL back to our app
-    base_url = ENV['STRIPE_STANDARD_PAYMENT_LINK'] || 'https://buy.stripe.com/test_placeholder'
-    success_url = "#{request.base_url}/subscriptions/success"
-    "#{base_url}?success_url=#{CGI.escape(success_url)}"
+  def create_checkout_session_url(user)
+    checkout_service = StripeCheckoutService.new(
+      user,
+      success_url: success_subscriptions_url,
+      cancel_url: cancel_payment_subscriptions_url
+    )
+
+    checkout_url = checkout_service.create_checkout_session
+
+    # Fallback to dashboard if Stripe checkout fails
+    checkout_url || dashboard_url
   end
 
-  def ensure_stripe_customer!(user)
-    return if user.stripe_customer_id.present?
-
-    begin
-      customer = Stripe::Customer.create(
-        email: user.email,
-        name: "#{user.first_name} #{user.last_name}".strip,
-        metadata: {
-          user_id: user.id
-        }
-      )
-      user.update!(stripe_customer_id: customer.id)
-    rescue Stripe::StripeError => e
-      Rails.logger.error "Failed to create Stripe customer: #{e.message}"
-      # Don't fail signup if Stripe is down, customer can be created later
-    end
-  end
 end
