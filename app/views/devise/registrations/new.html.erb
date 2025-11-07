@@ -48,17 +48,6 @@
                              class: "mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" %>
       </div>
 
-      <div>
-        <%= f.label :timezone, class: "block text-sm font-medium text-gray-700" %>
-        <%= f.select :timezone, options_for_select([
-          ["UTC", "UTC"],
-          ["Eastern Time", "America/New_York"],
-          ["Central Time", "America/Chicago"],
-          ["Mountain Time", "America/Denver"],
-          ["Pacific Time", "America/Los_Angeles"]
-        ], "UTC"), {}, { class: "mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" } %>
-      </div>
-
       <div class="flex items-start">
         <div class="flex items-center h-5">
           <%= f.check_box :eula_accepted, id: "terms_accepted", required: true,
@@ -66,7 +55,7 @@
         </div>
         <div class="ml-3 text-sm">
           <%= f.label :eula_accepted, class: "font-medium text-gray-700" do %>
-            I agree to the <%= link_to "End-User License Agreement", eula_path, target: "_blank", class: "text-blue-600 hover:text-blue-500 underline" %> and <%= link_to "Privacy Policy", privacy_path, target: "_blank", class: "text-blue-600 hover:text-blue-500 underline" %>
+            I agree to the <%= link_to "EULA", eula_path, target: "_blank", class: "text-blue-600 hover:text-blue-500 underline" %> and <%= link_to "Privacy Policy", privacy_path, target: "_blank", class: "text-blue-600 hover:text-blue-500 underline" %>
             <span class="text-red-600">*</span>
           <% end %>
         </div>
