@@ -2,6 +2,7 @@ class ApplicationController < ActionController::Base
   before_action :authenticate_user!, unless: :devise_controller? # Skip auth for Devise controllers
   before_action :configure_permitted_parameters, if: :devise_controller?
   before_action :set_request_id
+  before_action :check_subscription_status, unless: :devise_controller?
   
   # Standard Rails error handling
   rescue_from StandardError, with: :handle_standard_error
@@ -42,9 +43,25 @@ class ApplicationController < ActionController::Base
   end
   
   private
-  
+
   def set_request_id
     Thread.current[:request_id] = request.uuid
+  end
+
+  def check_subscription_status
+    return unless user_signed_in?
+    return if admin_impersonating? # Allow admin impersonation to bypass payment
+
+    # Skip check if user has active subscription
+    return if current_user.has_active_subscription?
+
+    # Use Stripe payment link configured in dashboard
+    # Success URL must be configured in Stripe Dashboard -> Payment Links
+    payment_link = ENV['STRIPE_STANDARD_PAYMENT_LINK'] || 'https://buy.stripe.com/test_placeholder'
+
+    # Redirect to payment page with message
+    flash[:alert] = "Please complete your subscription to access the application."
+    redirect_to payment_link, allow_other_host: true
   end
   
   def handle_standard_error(error)
