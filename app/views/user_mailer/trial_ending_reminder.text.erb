@@ -6,22 +6,18 @@ We hope you've been enjoying your experience with <%= @application_name %>! This
 
 Trial Status:
 Days remaining: <%= @days_remaining %>
-Trial ends: <%= (@user.created_at + 30.days).strftime("%B %d, %Y") %>
+Trial ends: <%= (@user.created_at + 14.days).strftime("%B %d, %Y") %>
 
 Don't lose access to your work!
 
-To continue using <%= @application_name %> after your trial ends, choose a subscription plan that fits your needs:
+After your 2-week free trial ends, your subscription will automatically continue at just $29/month:
 
-Standard Plan - $19/month:
-• Up to 25 projects
-• Priority email support
-• Advanced analytics
-
-Premium Plan - $49/month:
+Pro Plan - $29/month:
+• All features included
+• Priority support
 • Unlimited projects
-• 24/7 support
+• Advanced analytics
 • Custom integrations
-• White-label options
 
 Choose Your Plan: <%= @subscription_url %>
 

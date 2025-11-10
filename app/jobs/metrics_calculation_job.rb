@@ -79,7 +79,7 @@ class MetricsCalculationJob < ApplicationJob
       total_revenue: calculate_monthly_revenue,
       new_customers: User.joins(:subscription)
                          .where(users: { created_at: current_month..Date.current.end_of_month })
-                         .where.not(subscriptions: { status: 'free' })
+                         .where(subscriptions: { status: 'paid' })
                          .count,
       churn_rate: calculate_churn_rate,
       conversion_rate: calculate_conversion_rate
@@ -92,10 +92,10 @@ class MetricsCalculationJob < ApplicationJob
   
   def calculate_subscription_metrics
     {
-      free: Subscription.where(status: 'free').count,
-      standard: Subscription.where(status: 'standard').count,
-      premium: Subscription.where(status: 'premium').count,
-      total_paid: Subscription.where.not(status: 'free').count
+      paid: Subscription.where(status: 'paid').count,
+      canceled: Subscription.where(status: 'canceled').count,
+      inactive: Subscription.where(status: 'inactive').count,
+      total_paid: Subscription.where(status: 'paid').count
     }
   end
   
@@ -116,10 +116,9 @@ class MetricsCalculationJob < ApplicationJob
   def calculate_monthly_revenue
     # This would integrate with Stripe API to get actual revenue
     # For now, estimate based on subscription counts
-    standard_count = Subscription.where(status: 'standard').count
-    premium_count = Subscription.where(status: 'premium').count
-    
-    (standard_count * 19) + (premium_count * 49)
+    paid_count = Subscription.where(status: 'paid').count
+
+    paid_count * 29
   end
   
   def calculate_churn_rate
@@ -129,7 +128,7 @@ class MetricsCalculationJob < ApplicationJob
     
     canceled_this_month = Subscription.where(canceled_at: current_month..Date.current.end_of_month).count
     active_last_month = Subscription.where(created_at: ..last_month.end_of_month)
-                                  .where.not(status: 'free').count
+                                  .where(status: 'paid').count
     
     return 0 if active_last_month.zero?
     
@@ -137,13 +136,13 @@ class MetricsCalculationJob < ApplicationJob
   end
   
   def calculate_conversion_rate
-    # Calculate free to paid conversion rate over last 30 days
+    # Calculate trial to paid conversion rate over last 30 days
     thirty_days_ago = 30.days.ago
-    
+
     new_users = User.where(created_at: thirty_days_ago..Time.current).count
     converted_users = User.joins(:subscription)
                          .where(users: { created_at: thirty_days_ago..Time.current })
-                         .where.not(subscriptions: { status: 'free' })
+                         .where(subscriptions: { status: 'paid' })
                          .count
     
     return 0 if new_users.zero?

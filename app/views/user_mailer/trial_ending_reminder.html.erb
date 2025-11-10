@@ -7,26 +7,20 @@
 <div class="highlight-box">
   <p><strong>Trial Status</strong></p>
   <p>Days remaining: <strong><%= @days_remaining %></strong></p>
-  <p>Trial ends: <%= (@user.created_at + 30.days).strftime("%B %d, %Y") %></p>
+  <p>Trial ends: <%= (@user.created_at + 14.days).strftime("%B %d, %Y") %></p>
 </div>
 
 <h2>Don't lose access to your work!</h2>
 
-<p>To continue using <%= @application_name %> after your trial ends, choose a subscription plan that fits your needs:</p>
+<p>After your 2-week free trial ends, your subscription will automatically continue at just $29/month:</p>
 
-<p><strong>📊 Standard Plan - $19/month</strong></p>
+<p><strong>💎 Pro Plan - $29/month</strong></p>
 <ul>
-  <li>Up to 25 projects</li>
-  <li>Priority email support</li>
-  <li>Advanced analytics</li>
-</ul>
-
-<p><strong>💎 Premium Plan - $49/month</strong></p>
-<ul>
+  <li>All features included</li>
+  <li>Priority support</li>
   <li>Unlimited projects</li>
-  <li>24/7 support</li>
+  <li>Advanced analytics</li>
   <li>Custom integrations</li>
-  <li>White-label options</li>
 </ul>
 
 <p style="text-align: center;">

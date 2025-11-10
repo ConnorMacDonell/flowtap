@@ -37,14 +37,14 @@
         </div>
       </div>
 
-      <!-- Free Tier Users -->
+      <!-- Paid Subscribers -->
       <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
-        <dt class="truncate text-sm font-medium text-gray-500">Free Tier</dt>
-        <dd class="mt-1 text-3xl font-semibold tracking-tight text-gray-900"><%= @subscription_stats[:free] %></dd>
+        <dt class="truncate text-sm font-medium text-gray-500">Paid Subscribers</dt>
+        <dd class="mt-1 text-3xl font-semibold tracking-tight text-gray-900"><%= @subscription_stats[:paid] %></dd>
         <div class="mt-2 flex items-center text-sm">
-          <% free_rate = @total_users > 0 ? (@subscription_stats[:free].to_f / @total_users * 100).round(1) : 0 %>
-          <span class="text-blue-600 font-medium"><%= free_rate %>%</span>
-          <span class="ml-1 text-gray-500">of all users</span>
+          <% paid_rate = @total_users > 0 ? (@subscription_stats[:paid].to_f / @total_users * 100).round(1) : 0 %>
+          <span class="text-green-600 font-medium"><%= paid_rate %>%</span>
+          <span class="ml-1 text-gray-500">conversion rate</span>
         </div>
       </div>
 

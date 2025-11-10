@@ -94,14 +94,14 @@ class StripeWebhookJob < ApplicationJob
     old_tier = user_subscription.status
     
     user_subscription.update!(
-      status: 'free',
+      status: 'canceled',
       stripe_subscription_id: nil,
       current_period_start: nil,
       current_period_end: nil,
       canceled_at: Time.current
     )
-    
-    UserMailer.subscription_updated(user_subscription.user, old_tier, 'free').deliver_now
+
+    UserMailer.subscription_updated(user_subscription.user, old_tier, 'canceled').deliver_now
     # TODO use background job
     # EmailJob.perform_later('UserMailer', 'subscription_updated', user_subscription.user.id, old_tier, 'free')
   end

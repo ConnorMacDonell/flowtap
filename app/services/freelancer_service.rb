@@ -5,9 +5,9 @@ class FreelancerService
     @user = user
     @token_refresh_attempted = false
 
-    # Allow initialization if user can refresh token, not just if currently valid
-    unless @user.freelancer_connected? || @user.freelancer_can_refresh?
-      raise ArgumentError, 'User must have valid Freelancer connection or ability to refresh'
+    # Allow initialization if user has valid token or can refresh expired token
+    unless @user.freelancer_token_valid? || @user.freelancer_can_refresh?
+      raise ArgumentError, 'User must have valid Freelancer connection or ability to refresh. Please reauthorize.'
     end
 
     @base_url = freelancer_environment == 'production' ?
