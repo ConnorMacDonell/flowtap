@@ -7,9 +7,9 @@ class Admin::DashboardController < Admin::BaseController
     
     # Subscription metrics
     @subscription_stats = {
-      free: User.joins(:subscription).where(subscriptions: { status: 'free' }).count,
-      standard: User.joins(:subscription).where(subscriptions: { status: 'standard' }).count,
-      premium: User.joins(:subscription).where(subscriptions: { status: 'premium' }).count
+      paid: User.joins(:subscription).where(subscriptions: { status: 'paid' }).count,
+      canceled: User.joins(:subscription).where(subscriptions: { status: 'canceled' }).count,
+      inactive: User.joins(:subscription).where(subscriptions: { status: 'inactive' }).count
     }
     
     # Recent activity (last 30 days)
