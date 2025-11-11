@@ -8,13 +8,14 @@ if Rails.env.production?
     authentication: :plain,
     enable_starttls_auto: true
   }
-  
+
   ActionMailer::Base.delivery_method = :smtp
 elsif Rails.env.development?
   ActionMailer::Base.delivery_method = :letter_opener
   ActionMailer::Base.perform_deliveries = true
-else
+elsif Rails.env.test?
   ActionMailer::Base.delivery_method = :test
+  ActionMailer::Base.perform_deliveries = true
 end
 
 ActionMailer::Base.default_url_options = {
