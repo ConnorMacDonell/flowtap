@@ -132,7 +132,8 @@ class Auth::FreelancerController < ApplicationController
       'state' => state
     }
 
-    "#{base_url}/oauth/authorize?#{params.to_query}"
+    url = "#{base_url}/oauth/authorize?#{params.to_query}"
+    url
   end
 
   def exchange_code_for_tokens(code)
