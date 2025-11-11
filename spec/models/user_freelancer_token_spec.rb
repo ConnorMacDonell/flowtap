@@ -77,7 +77,7 @@ RSpec.describe User, 'Freelancer token management', type: :model do
         user.update!(
           freelancer_user_id: '123',
           freelancer_access_token: 'token',
-          freelancer_token_expires_at: 1.day.from_now
+          freelancer_token_expires_at: 10.days.from_now
         )
         expect(user.freelancer_needs_refresh?).to be false
       end

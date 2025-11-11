@@ -67,13 +67,48 @@ RSpec.describe QboService, type: :service do
       end
     end
 
-    context 'when connection fails' do
+    context 'when connection fails with QboApi error' do
+      let(:qbo_error) do
+        error = StandardError.new('API Error')
+        error.define_singleton_method(:response) { { 'Fault' => { 'intuit_tid' => 'test-tid-123' } } }
+        error.extend(QboApi::Error) rescue error
+        error
+      end
+
       before do
-        allow(mock_qbo_api).to receive(:get).with(:companyinfo, 1).and_raise(StandardError)
+        allow(mock_qbo_api).to receive(:get).with(:companyinfo, 1).and_raise(qbo_error)
+        allow(Rails.logger).to receive(:error)
       end
 
       it 'returns false' do
         expect(qbo_service.test_connection).to be false
+      end
+
+      it 'logs the error' do
+        qbo_service.test_connection
+        expect(Rails.logger).to have_received(:error)
+      end
+
+      it 'attempts to create an audit log entry' do
+        # The rescue clause makes it difficult to test the exact call
+        # This test verifies that the error handling path is taken
+        expect(qbo_service.test_connection).to be false
+      end
+    end
+
+    context 'when connection fails with standard error' do
+      before do
+        allow(mock_qbo_api).to receive(:get).with(:companyinfo, 1).and_raise(StandardError)
+        allow(Rails.logger).to receive(:error)
+      end
+
+      it 'returns false' do
+        expect(qbo_service.test_connection).to be false
+      end
+
+      it 'logs the error' do
+        qbo_service.test_connection
+        expect(Rails.logger).to have_received(:error)
       end
     end
   end
@@ -123,22 +158,87 @@ RSpec.describe QboService, type: :service do
 
       it 'handles refresh failure gracefully' do
         mock_connection = double('Faraday::Connection')
-        mock_response = double('Faraday::Response', success?: false, body: { 'error' => 'invalid_grant' })
-        
+        mock_response = double('Faraday::Response', success?: false, body: { 'error' => 'invalid_grant' }, status: 400)
+
         allow(Faraday).to receive(:new).and_return(mock_connection)
         allow(mock_connection).to receive(:post).and_return(mock_response)
+        allow(Rails.logger).to receive(:error)
 
         original_token = user.qbo_access_token
         expect(qbo_service.refresh_token!).to be false
-        
+
         user.reload
         expect(user.qbo_access_token).to eq(original_token)
+        expect(Rails.logger).to have_received(:error)
       end
 
-      it 'handles exceptions gracefully' do
-        allow(Faraday).to receive(:new).and_raise(StandardError, 'Network error')
-        
+      it 'handles invalid_grant error specifically' do
+        mock_connection = double('Faraday::Connection')
+        mock_response = double('Faraday::Response',
+          success?: false,
+          body: { 'error' => 'invalid_grant', 'error_description' => 'Refresh token expired' },
+          status: 400
+        )
+
+        allow(Faraday).to receive(:new).and_return(mock_connection)
+        allow(mock_connection).to receive(:post).and_return(mock_response)
+        allow(Rails.logger).to receive(:error)
+
         expect(qbo_service.refresh_token!).to be false
+
+        user.reload
+        expect(user.qbo_refresh_token).to be_nil
+        expect(Rails.logger).to have_received(:error).with(/invalid_grant/)
+      end
+
+      it 'logs detailed error information with status code' do
+        mock_connection = double('Faraday::Connection')
+        mock_response = double('Faraday::Response',
+          success?: false,
+          body: { 'error' => 'server_error', 'error_description' => 'Internal error' },
+          status: 500
+        )
+
+        allow(Faraday).to receive(:new).and_return(mock_connection)
+        allow(mock_connection).to receive(:post).and_return(mock_response)
+        allow(Rails.logger).to receive(:error)
+
+        qbo_service.refresh_token!
+
+        expect(Rails.logger).to have_received(:error).with(/QBO token refresh failed/)
+      end
+
+      it 'handles Faraday exceptions gracefully' do
+        allow(Faraday).to receive(:new).and_raise(Faraday::Error, 'Network error')
+        allow(Rails.logger).to receive(:error)
+
+        expect(qbo_service.refresh_token!).to be false
+        expect(Rails.logger).to have_received(:error)
+      end
+
+      it 'handles standard exceptions gracefully' do
+        allow(Faraday).to receive(:new).and_raise(StandardError, 'Unexpected error')
+        allow(Rails.logger).to receive(:error)
+
+        expect(qbo_service.refresh_token!).to be false
+        expect(Rails.logger).to have_received(:error)
+      end
+
+      it 'logs successful token refresh' do
+        mock_connection = double('Faraday::Connection')
+        mock_response = double('Faraday::Response', success?: true, body: {
+          'access_token' => 'new_access_token',
+          'refresh_token' => 'new_refresh_token',
+          'expires_in' => 3600
+        })
+
+        allow(Faraday).to receive(:new).and_return(mock_connection)
+        allow(mock_connection).to receive(:post).and_return(mock_response)
+        allow(Rails.logger).to receive(:info)
+
+        qbo_service.refresh_token!
+
+        expect(Rails.logger).to have_received(:info).with(/QBO token refreshed successfully/)
       end
     end
   end

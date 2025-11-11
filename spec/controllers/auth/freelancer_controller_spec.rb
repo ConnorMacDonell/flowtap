@@ -17,7 +17,7 @@ RSpec.describe Auth::FreelancerController, type: :controller do
       expect(response).to redirect_to(/freelancer-sandbox.com/)
       expect(response.location).to include('client_id=test_client_id')
       expect(response.location).to include('scope=basic')
-      expect(response.location).not_to include('advanced_scopes')
+      expect(response.location).to include('fln%3Aproject_manage')
     end
 
     it 'uses sandbox URL for sandbox environment' do
@@ -200,9 +200,11 @@ RSpec.describe Auth::FreelancerController, type: :controller do
         mock_service = double('FreelancerService')
         allow(FreelancerService).to receive(:new).with(user).and_return(mock_service)
         allow(mock_service).to receive(:get_user_info).and_return({
-          'id' => '12345',
-          'username' => 'testuser',
-          'display_name' => 'Test User'
+          'result' => {
+            'id' => '12345',
+            'username' => 'testuser',
+            'display_name' => 'Test User'
+          }
         })
 
         get :test_connection
@@ -251,7 +253,7 @@ RSpec.describe Auth::FreelancerController, type: :controller do
         json_response = JSON.parse(response.body)
 
         expect(json_response['success']).to be false
-        expect(json_response['error']).to eq('Freelancer not connected or token expired. Please reconnect.')
+        expect(json_response['error']).to eq('Freelancer not connected. Please connect your account first.')
       end
     end
   end

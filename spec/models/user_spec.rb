@@ -69,7 +69,8 @@ RSpec.describe User, type: :model do
   describe 'associations' do
     it 'has one subscription' do
       expect(user.association(:subscription)).to be_present
-      expect(user.subscription).to be_nil  # Since we removed auto-creation
+      expect(user.subscription).to be_present  # Default factory creates paid subscription
+      expect(user.subscription.status).to eq('paid')
     end
   end
 
@@ -118,9 +119,10 @@ RSpec.describe User, type: :model do
           password: 'password123',
           first_name: 'John',
           last_name: 'Doe',
-          timezone: 'America/New_York'
+          timezone: 'America/New_York',
+          eula_accepted: true
         }
-        
+
         user = User.new(user_params)
         expect(user).to be_valid
         expect { user.save! }.to change(User, :count).by(1)
@@ -132,9 +134,10 @@ RSpec.describe User, type: :model do
           password: 'password123',
           first_name: 'John',
           last_name: 'Doe',
-          timezone: 'America/New_York'
+          timezone: 'America/New_York',
+          eula_accepted: true
         }
-        
+
         user = User.create!(user_params)
         expect(user.subscription).to be_nil
       end
@@ -292,14 +295,14 @@ RSpec.describe User, type: :model do
 
     describe '#can_access_feature?' do
       context 'user without active subscription' do
+        let(:user_without_sub) { create(:user, without_subscription: true) }
+
         it 'cannot access qbo_integration' do
-          expect(user.can_access_feature?('qbo_integration')).to be false
+          expect(user_without_sub.can_access_feature?('qbo_integration')).to be false
         end
       end
 
       context 'user with paid subscription' do
-        before { create(:subscription, user: user, status: 'paid') }
-
         it 'can access qbo_integration' do
           expect(user.can_access_feature?('qbo_integration')).to be true
         end

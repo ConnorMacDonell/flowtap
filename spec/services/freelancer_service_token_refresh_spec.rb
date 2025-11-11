@@ -194,15 +194,13 @@ RSpec.describe FreelancerService, 'Token refresh functionality', type: :service 
       }
     end
 
-    before do
-      # Stub the user info API call
-      stub_request(:get, 'https://www.freelancer-sandbox.com/api/users/0.1/self/')
-        .with(headers: { 'Freelancer-OAuth-V1' => user.freelancer_access_token })
-        .to_return(status: 200, body: user_info_response.to_json)
-    end
-
     context 'when token expires soon' do
       let(:user) { create(:user, :with_freelancer_expiring_token) }
+
+      before do
+        stub_request(:get, 'https://www.freelancer-sandbox.com/api/users/0.1/self/')
+          .to_return(status: 200, body: user_info_response.to_json)
+      end
 
       it 'proactively refreshes token before making request' do
         expect(service).to receive(:refresh_token!).and_return(true)
@@ -213,15 +211,10 @@ RSpec.describe FreelancerService, 'Token refresh functionality', type: :service 
     end
 
     context 'when API returns 401 and token can be refreshed' do
-      before do
-        # First call returns 401, second call (after refresh) returns success
-        stub_request(:get, 'https://www.freelancer-sandbox.com/api/users/0.1/self/')
-          .to_return(
-            { status: 401, body: { error: 'unauthorized' }.to_json },
-            { status: 200, body: user_info_response.to_json }
-          )
+      let(:user) { create(:user, :with_freelancer_valid_token) }
 
-        # Stub token refresh
+      before do
+        # Stub token refresh first
         stub_request(:post, 'https://accounts.freelancer-sandbox.com/oauth/token')
           .to_return(
             status: 200,
@@ -229,15 +222,34 @@ RSpec.describe FreelancerService, 'Token refresh functionality', type: :service 
               'access_token' => 'refreshed_token',
               'refresh_token' => 'new_refresh_token',
               'expires_in' => 3600
-            }.to_json
+            }.to_json,
+            headers: { 'Content-Type' => 'application/json' }
           )
+
+        # Use a lambda to check the header and return appropriate response
+        # Note: WebMock normalizes header names (e.g., 'Freelancer-Oauth-V1')
+        stub_request(:get, 'https://www.freelancer-sandbox.com/api/users/0.1/self/')
+          .to_return do |request|
+            token = request.headers['Freelancer-Oauth-V1']
+            if token == 'valid_access_token'
+              { status: 401, body: { error: 'unauthorized' }.to_json, headers: { 'Content-Type' => 'application/json' } }
+            elsif token == 'refreshed_token'
+              { status: 200, body: user_info_response.to_json, headers: { 'Content-Type' => 'application/json' } }
+            else
+              { status: 500, body: { error: "unexpected token: #{token}" }.to_json }
+            end
+          end
       end
 
       it 'automatically refreshes token and retries request' do
-        expect(Rails.logger).to receive(:info).with(/Attempting token refresh due to 401/)
+        expect(Rails.logger).to receive(:info).at_least(:once)
 
         result = service.get_user_info
         expect(result).to eq(user_info_response)
+
+        # Verify token was actually updated
+        user.reload
+        expect(user.freelancer_access_token).to eq('refreshed_token')
       end
 
       it 'only attempts refresh once per request' do

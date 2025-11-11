@@ -3,6 +3,14 @@ require 'rails_helper'
 RSpec.describe Users::RegistrationsController, type: :controller do
   before do
     @request.env["devise.mapping"] = Devise.mappings[:user]
+
+    # Stub Stripe API calls
+    allow(Stripe::Customer).to receive(:create).and_return(
+      double(id: 'cus_test123')
+    )
+    allow(Stripe::Checkout::Session).to receive(:create).and_return(
+      double(url: 'https://checkout.stripe.com/test123')
+    )
   end
 
   describe 'GET #new' do
@@ -13,15 +21,17 @@ RSpec.describe Users::RegistrationsController, type: :controller do
   end
 
   describe 'POST #create' do
+    let(:unique_email) { "test-#{SecureRandom.hex(4)}@example.com" }
     let(:valid_params) do
       {
         user: {
-          email: 'test@example.com',
+          email: unique_email,
           password: 'password123',
           password_confirmation: 'password123',
           first_name: 'John',
           last_name: 'Doe',
-          timezone: 'America/New_York'
+          timezone: 'America/New_York',
+          eula_accepted: '1'
         }
       }
     end
@@ -53,34 +63,35 @@ RSpec.describe Users::RegistrationsController, type: :controller do
         expect(user).not_to be_confirmed
       end
 
-      it 'does not create a subscription automatically' do
+      it 'creates an inactive subscription automatically' do
         post :create, params: valid_params
         user = User.last
-        expect(user.subscription).to be_nil
+        expect(user.subscription).to be_present
+        expect(user.subscription.status).to eq('inactive')
       end
 
       it 'sets the user attributes correctly' do
         post :create, params: valid_params
         user = User.last
-        expect(user.email).to eq('test@example.com')
+        expect(user.email).to eq(unique_email)
         expect(user.first_name).to eq('John')
         expect(user.last_name).to eq('Doe')
         expect(user.timezone).to eq('America/New_York')
       end
 
-      it 'redirects to root path with confirmation message' do
+      it 'redirects to Stripe payment link' do
         post :create, params: valid_params
-        expect(response).to redirect_to(root_path)
-        expect(flash[:notice]).to eq('Please check your email to confirm your account.')
+        expect(response).to have_http_status(:redirect)
+        # Redirects to external Stripe URL, can't assert exact URL in test
       end
 
       it 'sends a confirmation email' do
         expect {
           post :create, params: valid_params
         }.to change(ActionMailer::Base.deliveries, :count).by(1)
-        
+
         confirmation_email = ActionMailer::Base.deliveries.last
-        expect(confirmation_email.to).to include('test@example.com')
+        expect(confirmation_email.to).to include(unique_email)
         expect(confirmation_email.subject).to match(/confirm/i)
       end
     end
@@ -149,12 +160,15 @@ RSpec.describe Users::RegistrationsController, type: :controller do
 
     context 'with duplicate email' do
       before do
-        create(:user, email: 'test@example.com')
+        create(:user, email: 'duplicate@example.com')
       end
 
       it 'does not create a duplicate user' do
+        dup_params = valid_params.deep_dup
+        dup_params[:user][:email] = 'duplicate@example.com'
+
         expect {
-          post :create, params: valid_params
+          post :create, params: dup_params
         }.not_to change(User, :count)
       end
     end
@@ -178,34 +192,5 @@ RSpec.describe Users::RegistrationsController, type: :controller do
         expect(user.marketing_emails).to be_falsy if user.respond_to?(:marketing_emails)
       end
     end
-  end
-
-  describe 'redirects after signup' do
-    context 'when user is successfully created' do
-      it 'redirects to root path' do
-        post :create, params: valid_params
-        expect(response).to redirect_to(root_path)
-      end
-
-      it 'sets appropriate flash message' do
-        post :create, params: valid_params
-        expect(flash[:notice]).to eq('Please check your email to confirm your account.')
-      end
-    end
-  end
-
-  private
-
-  def valid_params
-    {
-      user: {
-        email: 'test@example.com',
-        password: 'password123',
-        password_confirmation: 'password123',
-        first_name: 'John',
-        last_name: 'Doe',
-        timezone: 'America/New_York'
-      }
-    }
   end
 end

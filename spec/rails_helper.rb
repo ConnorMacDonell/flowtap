@@ -43,6 +43,40 @@ RSpec.configure do |config|
   # instead of true.
   config.use_transactional_fixtures = true
 
+  # SAFETY CHECK: Verify we're using the test database
+  config.before(:suite) do
+    db_config = ActiveRecord::Base.connection_db_config
+    db_name = db_config.database
+
+    unless db_name.to_s.end_with?('_test')
+      raise <<~ERROR
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        ⚠️  CRITICAL: Tests are NOT using the test database!
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+        Current database: #{db_name}
+        Expected: saas_template_test
+
+        This will cause tests to modify your development data!
+
+        Fix: Remove DATABASE_URL from your .env file
+        Rails should use config/database.yml for local development
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      ERROR
+    end
+
+    puts "✓ Test database verified: #{db_name}"
+
+    # Rails.application.load_seed # Uncomment if you need seed data for tests
+  end
+
+  # For feature specs that may not be fully cleaned by transactional fixtures
+  # (e.g., JavaScript-enabled tests with Capybara), you can use after hooks
+  config.after(:each, type: :feature) do
+    # Transactional fixtures handle most cleanup
+    # Only add explicit cleanup here if you encounter issues with JS-enabled tests
+  end
+
   # You can uncomment this line to turn off ActiveRecord support entirely.
   # config.use_active_record = false
 

@@ -28,7 +28,7 @@ RSpec.describe FreelancerService, type: :service do
 
       it 'raises ArgumentError when user has no valid connection' do
         expect { described_class.new(user_without_connection) }.to raise_error(
-          ArgumentError, 'User must have valid Freelancer connection or ability to refresh'
+          ArgumentError, 'User must have valid Freelancer connection or ability to refresh. Please reauthorize.'
         )
       end
     end

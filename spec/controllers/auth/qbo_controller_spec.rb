@@ -18,9 +18,9 @@ RSpec.describe Auth::QboController, type: :controller do
       expect(response.location).to include('scope=com.intuit.quickbooks.accounting')
     end
 
-    it 'uses sandbox URL for non-production environments' do
+    it 'uses standard authorization URL' do
       get :connect
-      expect(response.location).to include('appcenter-sandbox.intuit.com')
+      expect(response.location).to include('appcenter.intuit.com')
     end
 
     context 'when user is not authenticated' do
@@ -35,6 +35,9 @@ RSpec.describe Auth::QboController, type: :controller do
 
   describe 'GET #callback' do
     it 'handles successful token exchange' do
+      # Set session state for OAuth validation
+      session[:qbo_oauth_state] = 'test_state_123'
+
       # Mock the controller's private method directly
       allow(controller).to receive(:exchange_code_for_tokens).and_return({
         'access_token' => 'qbo_access_token_123',
@@ -45,7 +48,7 @@ RSpec.describe Auth::QboController, type: :controller do
       original_time = Time.current
       allow(Time).to receive(:current).and_return(original_time)
 
-      get :callback, params: { code: 'auth_code_123', realmId: 'realm_123' }
+      get :callback, params: { code: 'auth_code_123', realmId: 'realm_123', state: 'test_state_123' }
 
       user.reload
       expect(user.qbo_realm_id).to eq('realm_123')
@@ -59,9 +62,12 @@ RSpec.describe Auth::QboController, type: :controller do
     end
 
     it 'handles failed token exchange' do
+      # Set session state for OAuth validation
+      session[:qbo_oauth_state] = 'test_state_123'
+
       allow(controller).to receive(:exchange_code_for_tokens).and_raise(StandardError, 'Token exchange failed')
 
-      get :callback, params: { code: 'invalid_code', realmId: 'realm_123' }
+      get :callback, params: { code: 'invalid_code', realmId: 'realm_123', state: 'test_state_123' }
 
       user.reload
       expect(user.qbo_realm_id).to be_nil
