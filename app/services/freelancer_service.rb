@@ -23,6 +23,12 @@ class FreelancerService
     make_request('GET', "/api/projects/0.1/projects/?limit=#{limit}")
   end
 
+  def get_employer_projects(limit: 100)
+    # Get all projects owned by the authenticated user (as employer)
+    # Uses owners[] filter which returns all projects regardless of bid activity
+    make_request('GET', "/api/projects/0.1/projects/?owners[]=#{@user.freelancer_user_id}&limit=#{limit}")
+  end
+
   def get_bids(limit: 10)
     make_request('GET', "/api/projects/0.1/bids/?bidders[]=#{@user.freelancer_user_id}&limit=#{limit}")
   end
@@ -286,6 +292,8 @@ class FreelancerService
         @token_refresh_attempted = true
 
         if refresh_token!
+          # Reload user to get the new token from database
+          @user.reload
           # Reset auth header with new token and retry
           return make_request(method, path, params)
         else
@@ -304,7 +312,9 @@ class FreelancerService
     # If token is expired or expiring soon, try to refresh
     if @user.freelancer_needs_refresh? && @user.freelancer_can_refresh? && !@token_refresh_attempted
       Rails.logger.info "Freelancer API: Proactively refreshing token before request"
-      refresh_token!
+      if refresh_token!
+        @user.reload
+      end
     elsif @user.freelancer_token_expired? && !@user.freelancer_can_refresh?
       raise ArgumentError, 'Freelancer token expired and cannot be refreshed. User needs to reauthorize.'
     elsif !@user.freelancer_token_valid? && !@user.freelancer_can_refresh?
