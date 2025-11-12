@@ -21,7 +21,7 @@
             <% if user_signed_in? %>
               <%= link_to "Go to Dashboard", dashboard_path, class: "rounded-md bg-blue-600 px-5 py-3 text-base font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 text-center" %>
             <% else %>
-              <%= link_to "Start For Free", new_user_registration_path, class: "rounded-md bg-blue-600 px-5 py-3 text-base font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 text-center" %>
+              <%= link_to "Start Your Free Trial", new_user_registration_path, class: "rounded-md bg-blue-600 px-5 py-3 text-base font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 text-center" %>
               <a href="#features" class="rounded-md bg-white px-5 py-3 text-base font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 text-center">
                 Learn more
               </a>
@@ -62,7 +62,7 @@
                     <div class="flex items-center gap-3">
                       <div class="w-2 h-2 bg-green-500 rounded-full"></div>
                       <div>
-                        <p class="text-sm font-medium text-gray-900">Upwork Invoice #1234</p>
+                        <p class="text-sm font-medium text-gray-900">Freelancer Invoice #1234</p>
                         <p class="text-xs text-gray-500">Jan 12, 2025</p>
                       </div>
                     </div>
@@ -134,7 +134,7 @@
               Set it once, forget it forever
             </dt>
             <dd class="mt-2 text-base leading-7 text-gray-600">
-              Choose daily, weekly, or monthly syncs – whatever works for your workflow. Then relax while 
+              Choose daily, weekly, or monthly syncs – whatever works for you. Then relax while
               FlowTap works in the background. <strong>No more "Oh crap, I forgot to update QuickBooks"</strong> moments.
             </dd>
           </div>
@@ -189,7 +189,7 @@
           </span>
         </div>
       </div>
-      <div class="mx-auto mt-16 grid max-w-lg grid-cols-1 gap-y-8 lg:max-w-4xl lg:grid-cols-3 lg:gap-x-8">
+      <div class="mx-auto mt-16 grid max-w-lg grid-cols-1 gap-y-8 lg:max-w-4xl lg:grid-cols-2 lg:gap-x-8">
         <!-- Starter tier -->
         <div class="bg-white rounded-lg shadow-sm ring-1 ring-gray-200 p-8 flex flex-col h-full">
           <div class="flex-1">
@@ -288,54 +288,6 @@
           </div>
           <button class="mt-8 block w-full rounded-md bg-gradient-to-r from-blue-600 to-indigo-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:from-blue-700 hover:to-indigo-700">
             Coming very soon
-          </button>
-        </div>
-        
-        <!-- Enterprise tier -->
-        <div class="bg-white rounded-lg shadow-sm ring-1 ring-gray-200 p-8 flex flex-col h-full">
-          <div class="flex-1">
-            <h3 class="text-lg font-semibold leading-8 text-gray-900">Enterprise</h3>
-            <p class="text-sm leading-6 text-gray-600">For agencies & teams</p>
-            <p class="mt-6 flex items-baseline gap-x-1">
-              <span class="text-4xl font-bold tracking-tight text-gray-900">$79</span>
-              <span class="text-sm font-semibold leading-6 text-gray-600">/month</span>
-            </p>
-            <p class="text-xs text-blue-600 mt-1 font-semibold">White-glove onboarding included</p>
-            <ul role="list" class="mt-8 space-y-3 text-sm leading-6 text-gray-600">
-              <li class="flex gap-x-3">
-                <svg class="h-6 w-5 flex-none text-green-600" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
-                </svg>
-                Unlimited everything (transactions, platforms)
-              </li>
-              <li class="flex gap-x-3">
-                <svg class="h-6 w-5 flex-none text-green-600" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
-                </svg>
-                Multiple team members & QuickBooks accounts
-              </li>
-              <li class="flex gap-x-3">
-                <svg class="h-6 w-5 flex-none text-green-600" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
-                </svg>
-                Real-time sync (instant updates)
-              </li>
-              <li class="flex gap-x-3">
-                <svg class="h-6 w-5 flex-none text-green-600" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
-                </svg>
-                Custom sync rules & advanced automation
-              </li>
-              <li class="flex gap-x-3">
-                <svg class="h-6 w-5 flex-none text-green-600" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
-                </svg>
-                Phone support + dedicated success manager
-              </li>
-            </ul>
-          </div>
-          <button class="mt-8 block w-full rounded-md bg-blue-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-blue-500">
-            Contact us
           </button>
         </div>
       </div>
