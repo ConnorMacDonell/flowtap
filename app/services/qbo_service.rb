@@ -82,6 +82,50 @@ class QboService
     false
   end
 
+  def revoke_tokens!
+    # Prefer refresh token (invalidates both tokens), fallback to access token
+    token_to_revoke = @user.qbo_refresh_token.presence || @user.qbo_access_token.presence
+
+    unless token_to_revoke
+      Rails.logger.warn("QBO revoke: no tokens to revoke for user #{@user.id}")
+      return false
+    end
+
+    connection = Faraday.new(url: 'https://developer.api.intuit.com') do |conn|
+      conn.request :url_encoded
+      conn.response :json
+    end
+
+    response = connection.post('/v2/oauth2/tokens/revoke') do |req|
+      req.headers['Authorization'] = "Basic #{Base64.strict_encode64("#{ENV['QBO_CLIENT_ID']}:#{ENV['QBO_CLIENT_SECRET']}")}"
+      req.headers['Content-Type'] = 'application/json'
+      req.body = {
+        'token' => token_to_revoke
+      }.to_json
+    end
+
+    if response.success?
+      Rails.logger.info("QBO tokens revoked successfully for user #{@user.id} (realm: #{@user.qbo_realm_id})")
+      true
+    else
+      log_data = {
+        user_id: @user.id,
+        realm_id: @user.qbo_realm_id,
+        status: response.status,
+        error_body: response.body,
+        timestamp: Time.current
+      }
+      Rails.logger.error("QBO token revocation failed: #{log_data.to_json}")
+      false
+    end
+  rescue Faraday::Error => e
+    log_error('revoke_tokens', e)
+    false
+  rescue => e
+    log_error('revoke_tokens', e)
+    false
+  end
+
   private
 
   def handle_token_refresh_error(response)

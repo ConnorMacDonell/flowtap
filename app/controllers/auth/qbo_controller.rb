@@ -39,6 +39,27 @@ class Auth::QboController < ApplicationController
   end
 
   def disconnect
+    # If user has a QBO connection, revoke tokens on Intuit's servers first
+    if current_user.qbo_connected?
+      begin
+        qbo_service = QboService.new(current_user)
+
+        unless qbo_service.revoke_tokens!
+          redirect_to dashboard_path, alert: 'Failed to disconnect from QuickBooks. Please try again or contact support.'
+          return
+        end
+      rescue ArgumentError
+        # No valid connection - safe to disconnect locally
+        Rails.logger.info("QBO disconnect: no valid connection for user #{current_user.id}, proceeding with local disconnect")
+      rescue => e
+        # Revocation failed - DO NOT disconnect locally
+        Rails.logger.error("QBO disconnect: revoke failed for user #{current_user.id}: #{e.message}")
+        redirect_to dashboard_path, alert: 'Failed to disconnect from QuickBooks. Please try again or contact support.'
+        return
+      end
+    end
+
+    # Only disconnect locally if revocation succeeded or there was no connection
     current_user.disconnect_qbo!
     redirect_to dashboard_path, notice: 'QuickBooks Online disconnected successfully.'
   end
