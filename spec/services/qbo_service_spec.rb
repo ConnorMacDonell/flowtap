@@ -242,4 +242,120 @@ RSpec.describe QboService, type: :service do
       end
     end
   end
+
+  describe '#revoke_tokens!' do
+    before do
+      ENV['QBO_CLIENT_ID'] = 'test_client_id'
+      ENV['QBO_CLIENT_SECRET'] = 'test_client_secret'
+    end
+
+    context 'when user has refresh token' do
+      it 'revokes the refresh token successfully' do
+        mock_connection = double('Faraday::Connection')
+        mock_response = double('Faraday::Response', success?: true, body: {})
+
+        allow(Faraday).to receive(:new).and_return(mock_connection)
+        allow(mock_connection).to receive(:post).and_return(mock_response)
+        allow(Rails.logger).to receive(:info)
+
+        expect(qbo_service.revoke_tokens!).to be true
+        expect(Rails.logger).to have_received(:info).with(/QBO.*revoked successfully/)
+      end
+
+      it 'sends the refresh token to the revoke endpoint' do
+        mock_connection = double('Faraday::Connection')
+        mock_response = double('Faraday::Response', success?: true, body: {})
+
+        allow(Faraday).to receive(:new).and_return(mock_connection)
+        expect(mock_connection).to receive(:post).with('/v2/oauth2/tokens/revoke') do |&block|
+          req = double('request', headers: {}, body: nil)
+          allow(req).to receive(:headers=)
+          allow(req).to receive(:[]=)
+          allow(req).to receive(:body=) do |body|
+            expect(JSON.parse(body)['token']).to eq(user.qbo_refresh_token)
+          end
+          block.call(req)
+          mock_response
+        end
+
+        qbo_service.revoke_tokens!
+      end
+    end
+
+    context 'when user has only access token (no refresh token)' do
+      before do
+        user.update(qbo_refresh_token: nil)
+      end
+
+      it 'revokes the access token as fallback' do
+        mock_connection = double('Faraday::Connection')
+        mock_response = double('Faraday::Response', success?: true, body: {})
+
+        allow(Faraday).to receive(:new).and_return(mock_connection)
+        expect(mock_connection).to receive(:post).with('/v2/oauth2/tokens/revoke') do |&block|
+          req = double('request', headers: {}, body: nil)
+          allow(req).to receive(:headers=)
+          allow(req).to receive(:[]=)
+          allow(req).to receive(:body=) do |body|
+            expect(JSON.parse(body)['token']).to eq(user.qbo_access_token)
+          end
+          block.call(req)
+          mock_response
+        end
+
+        expect(qbo_service.revoke_tokens!).to be true
+      end
+    end
+
+    context 'when user has no tokens' do
+      it 'returns false and logs warning' do
+        # Initialize service with valid connection first
+        service = qbo_service
+
+        # Then clear tokens to test edge case
+        user.update(qbo_refresh_token: nil, qbo_access_token: nil)
+
+        allow(Rails.logger).to receive(:warn)
+
+        expect(service.revoke_tokens!).to be false
+        expect(Rails.logger).to have_received(:warn).with(/no tokens to revoke/)
+      end
+    end
+
+    context 'when revocation fails' do
+      it 'returns false and logs error' do
+        mock_connection = double('Faraday::Connection')
+        mock_response = double('Faraday::Response',
+          success?: false,
+          body: { 'error' => 'invalid_token' },
+          status: 400
+        )
+
+        allow(Faraday).to receive(:new).and_return(mock_connection)
+        allow(mock_connection).to receive(:post).and_return(mock_response)
+        allow(Rails.logger).to receive(:error)
+
+        expect(qbo_service.revoke_tokens!).to be false
+        expect(Rails.logger).to have_received(:error).with(/QBO token revocation failed/)
+      end
+    end
+
+    context 'when network error occurs' do
+      it 'handles Faraday exceptions gracefully' do
+        allow(Faraday).to receive(:new).and_raise(Faraday::Error, 'Network error')
+        allow(Rails.logger).to receive(:error)
+
+        expect(qbo_service.revoke_tokens!).to be false
+        expect(Rails.logger).to have_received(:error)
+      end
+
+      it 'handles standard exceptions gracefully' do
+        allow(Faraday).to receive(:new).and_raise(StandardError, 'Unexpected error')
+        allow(Rails.logger).to receive(:error)
+
+        expect(qbo_service.revoke_tokens!).to be false
+        expect(Rails.logger).to have_received(:error)
+      end
+    end
+  end
 end

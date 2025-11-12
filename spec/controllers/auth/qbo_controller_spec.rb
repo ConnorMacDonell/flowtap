@@ -89,6 +89,17 @@ RSpec.describe Auth::QboController, type: :controller do
     end
 
     it 'disconnects QBO and redirects with success message' do
+      # Stub the revoke endpoint call
+      stub_request(:post, "https://developer.api.intuit.com/v2/oauth2/tokens/revoke")
+        .with(
+          body: hash_including("token" => "refresh_123"),
+          headers: {
+            'Authorization' => "Basic #{Base64.strict_encode64('test_client_id:test_client_secret')}",
+            'Content-Type' => 'application/json'
+          }
+        )
+        .to_return(status: 200, body: "", headers: {})
+
       delete :disconnect
 
       user.reload
@@ -102,6 +113,35 @@ RSpec.describe Auth::QboController, type: :controller do
       expect(flash[:notice]).to eq('QuickBooks Online disconnected successfully.')
     end
 
+    it 'handles revocation failure and does not disconnect locally' do
+      # Stub the revoke endpoint to fail
+      stub_request(:post, "https://developer.api.intuit.com/v2/oauth2/tokens/revoke")
+        .to_return(status: 400, body: { error: 'invalid_token' }.to_json, headers: { 'Content-Type' => 'application/json' })
+
+      delete :disconnect
+
+      user.reload
+      # Tokens should NOT be cleared when revocation fails
+      expect(user.qbo_realm_id).to eq('realm_123')
+      expect(user.qbo_access_token).to eq('token_123')
+      expect(user.qbo_refresh_token).to eq('refresh_123')
+
+      expect(response).to redirect_to(dashboard_path)
+      expect(flash[:alert]).to eq('Failed to disconnect from QuickBooks. Please try again or contact support.')
+    end
+
+    it 'disconnects locally when no connection exists' do
+      # Clear tokens before test
+      user.update(qbo_access_token: nil, qbo_realm_id: nil)
+
+      delete :disconnect
+
+      user.reload
+      expect(user.qbo_connected_at).to be_nil
+
+      expect(response).to redirect_to(dashboard_path)
+      expect(flash[:notice]).to eq('QuickBooks Online disconnected successfully.')
+    end
   end
 
   describe 'GET #status' do
