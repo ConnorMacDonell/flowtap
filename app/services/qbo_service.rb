@@ -108,11 +108,12 @@ class QboService
       Rails.logger.info("QBO tokens revoked successfully for user #{@user.id} (realm: #{@user.qbo_realm_id})")
       true
     else
+      error_type = response.body.is_a?(Hash) ? response.body['error'] : 'unknown'
       log_data = {
         user_id: @user.id,
         realm_id: @user.qbo_realm_id,
         status: response.status,
-        error_body: response.body,
+        error_type: error_type,
         timestamp: Time.current
       }
       Rails.logger.error("QBO token revocation failed: #{log_data.to_json}")
@@ -132,11 +133,10 @@ class QboService
     error_body = response.body
     error_code = error_body['error'] if error_body.is_a?(Hash)
 
-    # Log detailed error information
+    # Log only error type and status, never log response body or descriptions
     log_data = {
       user_id: @user.id,
-      error_code: error_code,
-      error_description: error_body.is_a?(Hash) ? error_body['error_description'] : error_body,
+      error_code: error_code || 'unknown',
       status: response.status,
       timestamp: Time.current
     }
