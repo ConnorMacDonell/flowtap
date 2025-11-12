@@ -41,6 +41,9 @@ gem "redis", ">= 4.0.1"
 # Authentication
 gem 'devise'
 
+# Rate limiting and abuse protection
+gem 'rack-attack'
+
 # Background job processing
 gem 'sidekiq'
 gem 'sidekiq-cron'
