@@ -39,7 +39,10 @@ module SaasTemplate
     
     # Configure timezone
     config.time_zone = 'UTC'
-    
+
+    # Enable Rack::Attack middleware for rate limiting
+    config.middleware.use Rack::Attack
+
     # Error classes are now in app/models for better autoloading
   end
 end
