@@ -5,6 +5,12 @@ class User < ApplicationRecord
          :recoverable, :rememberable, :validatable,
          :confirmable, :trackable
 
+  # Encrypt sensitive OAuth tokens
+  encrypts :qbo_access_token
+  encrypts :qbo_refresh_token
+  encrypts :freelancer_access_token
+  encrypts :freelancer_refresh_token
+
   # Associations
   has_one :subscription, dependent: :destroy
 
