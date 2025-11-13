@@ -23,14 +23,44 @@ class Auth::QboController < ApplicationController
 
       token_response = exchange_code_for_tokens(params[:code])
 
+      # Validate ID token (OpenID Connect requirement)
+      unless QboService.validate_id_token(qbo_client, token_response[:id_token])
+        Rails.logger.error "QBO ID token validation failed for user #{current_user.id}"
+        redirect_to dashboard_path, alert: 'Failed to validate QuickBooks identity. Please try again.'
+        return
+      end
+
+      # Fetch user profile info from Intuit
+      user_info = QboService.fetch_user_info(qbo_client, token_response[:access_token])
+
+      unless user_info
+        redirect_to dashboard_path, alert: 'Failed to retrieve user information from QuickBooks. Please try again.'
+        return
+      end
+
+      # CRITICAL: Verify email is verified (per Intuit documentation requirement)
+      unless user_info[:email_verified]
+        Rails.logger.warn "QBO connection rejected - email not verified for user #{current_user.id}"
+        redirect_to dashboard_path, alert: 'Your QuickBooks email is not verified. Please verify your email with Intuit and try again.'
+        return
+      end
+
+      # Store all OAuth and OpenID data
       current_user.update!(
         qbo_realm_id: params[:realmId],
         qbo_access_token: token_response[:access_token],
         qbo_refresh_token: token_response[:refresh_token],
         qbo_token_expires_at: Time.current + token_response[:expires_in].seconds,
-        qbo_connected_at: Time.current
+        qbo_connected_at: Time.current,
+        qbo_id_token: token_response[:id_token],
+        qbo_user_sub: user_info[:sub],
+        qbo_user_email: user_info[:email],
+        qbo_user_email_verified: user_info[:email_verified],
+        qbo_user_given_name: user_info[:given_name],
+        qbo_user_family_name: user_info[:family_name]
       )
 
+      Rails.logger.info "QBO connected successfully for user #{current_user.id} (sub: #{user_info[:sub]})"
       redirect_to dashboard_path, notice: 'QuickBooks Online connected successfully!'
     rescue IntuitOAuth::OAuth2ClientException => e
       Rails.logger.error "QBO OAuth error: #{e.message}, intuit_tid: #{e.intuit_tid}"
@@ -129,7 +159,13 @@ class Auth::QboController < ApplicationController
   end
 
   def qbo_authorization_url(state)
-    scopes = [IntuitOAuth::Scopes::ACCOUNTING]
+    # Request OpenID Connect scopes for SSO along with accounting access
+    scopes = [
+      IntuitOAuth::Scopes::ACCOUNTING,
+      IntuitOAuth::Scopes::OPENID,
+      IntuitOAuth::Scopes::PROFILE,
+      IntuitOAuth::Scopes::EMAIL
+    ]
 
     # Get the SDK-generated URL
     auth_url = qbo_client.code.get_auth_uri(scopes)
@@ -150,7 +186,8 @@ class Auth::QboController < ApplicationController
     {
       access_token: token_response.access_token,
       refresh_token: token_response.refresh_token,
-      expires_in: token_response.expires_in
+      expires_in: token_response.expires_in,
+      id_token: token_response.id_token
     }
   end
 end
