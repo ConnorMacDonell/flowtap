@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_10_02_021953) do
+ActiveRecord::Schema[7.1].define(version: 2025_11_13_021219) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -96,6 +96,12 @@ ActiveRecord::Schema[7.1].define(version: 2025_10_02_021953) do
     t.datetime "freelancer_connected_at"
     t.datetime "eula_accepted_at"
     t.datetime "privacy_policy_accepted_at"
+    t.text "qbo_id_token"
+    t.string "qbo_user_sub"
+    t.string "qbo_user_email"
+    t.boolean "qbo_user_email_verified"
+    t.string "qbo_user_given_name"
+    t.string "qbo_user_family_name"
     t.index ["confirmation_token"], name: "index_users_on_confirmation_token", unique: true
     t.index ["deleted_at"], name: "index_users_on_deleted_at"
     t.index ["email"], name: "index_users_on_email", unique: true
