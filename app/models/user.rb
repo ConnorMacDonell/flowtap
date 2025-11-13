@@ -8,6 +8,7 @@ class User < ApplicationRecord
   # Encrypt sensitive OAuth tokens
   encrypts :qbo_access_token
   encrypts :qbo_refresh_token
+  encrypts :qbo_id_token
   encrypts :freelancer_access_token
   encrypts :freelancer_refresh_token
 
@@ -126,7 +127,13 @@ class User < ApplicationRecord
       qbo_access_token: nil,
       qbo_refresh_token: nil,
       qbo_token_expires_at: nil,
-      qbo_connected_at: nil
+      qbo_connected_at: nil,
+      qbo_id_token: nil,
+      qbo_user_sub: nil,
+      qbo_user_email: nil,
+      qbo_user_email_verified: nil,
+      qbo_user_given_name: nil,
+      qbo_user_family_name: nil
     )
   end
 
