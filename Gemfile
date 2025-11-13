@@ -59,6 +59,7 @@ gem 'faraday'
 
 # QuickBooks Online API integration
 gem 'qbo_api'
+gem 'intuit-oauth'
 
 # Search functionality
 gem 'ransack'
