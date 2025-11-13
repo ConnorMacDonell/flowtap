@@ -22,16 +22,19 @@ class Auth::QboController < ApplicationController
       session.delete(:qbo_oauth_state)
 
       token_response = exchange_code_for_tokens(params[:code])
-      
+
       current_user.update!(
         qbo_realm_id: params[:realmId],
-        qbo_access_token: token_response['access_token'],
-        qbo_refresh_token: token_response['refresh_token'],
-        qbo_token_expires_at: Time.current + token_response['expires_in'].seconds,
+        qbo_access_token: token_response[:access_token],
+        qbo_refresh_token: token_response[:refresh_token],
+        qbo_token_expires_at: Time.current + token_response[:expires_in].seconds,
         qbo_connected_at: Time.current
       )
 
       redirect_to dashboard_path, notice: 'QuickBooks Online connected successfully!'
+    rescue IntuitOAuth::OAuth2ClientException => e
+      Rails.logger.error "QBO OAuth error: #{e.message}, intuit_tid: #{e.intuit_tid}"
+      redirect_to dashboard_path, alert: 'Failed to connect to QuickBooks Online. Please try again.'
     rescue => e
       Rails.logger.error "QBO OAuth error: #{e.message}"
       redirect_to dashboard_path, alert: 'Failed to connect to QuickBooks Online. Please try again.'
@@ -116,45 +119,38 @@ class Auth::QboController < ApplicationController
 
   private
 
+  def qbo_client
+    @qbo_client ||= IntuitOAuth::Client.new(
+      ENV['QBO_CLIENT_ID'],
+      ENV['QBO_CLIENT_SECRET'],
+      auth_qbo_callback_url,
+      ENV['QBO_ENVIRONMENT'] || 'sandbox'
+    )
+  end
+
   def qbo_authorization_url(state)
-    # QBO OAuth2 uses the same authorization endpoint for both sandbox and production
-    # The environment is determined by the app keys, not the URL
-    base_url = 'https://appcenter.intuit.com'
-    params = {
-      'client_id' => ENV['QBO_CLIENT_ID'],
-      'scope' => 'com.intuit.quickbooks.accounting',
-      'redirect_uri' => auth_qbo_callback_url,
-      'response_type' => 'code',
-      'access_type' => 'offline',
-      'state' => state
-    }
-    "#{base_url}/connect/oauth2?#{params.to_query}"
+    scopes = [IntuitOAuth::Scopes::ACCOUNTING]
+
+    # Get the SDK-generated URL
+    auth_url = qbo_client.code.get_auth_uri(scopes)
+
+    # SDK generates its own state parameter, but we need to use our own for session tracking
+    # Replace the SDK's state parameter with our own
+    uri = URI.parse(auth_url)
+    params = Rack::Utils.parse_query(uri.query)
+    params['state'] = state
+    uri.query = params.to_query
+
+    uri.to_s
   end
 
   def exchange_code_for_tokens(code)
-    connection = Faraday.new(url: token_endpoint_url) do |conn|
-      conn.request :url_encoded
-      conn.response :json
-    end
+    token_response = qbo_client.token.get_bearer_token(code)
 
-    response = connection.post do |req|
-      req.headers['Authorization'] = "Basic #{Base64.strict_encode64("#{ENV['QBO_CLIENT_ID']}:#{ENV['QBO_CLIENT_SECRET']}")}"
-      req.body = {
-        'grant_type' => 'authorization_code',
-        'code' => code,
-        'redirect_uri' => auth_qbo_callback_url
-      }
-    end
-
-    unless response.success?
-      raise "Token exchange failed: #{response.body}"
-    end
-
-    response.body
-  end
-
-  def token_endpoint_url
-    # QBO uses the same token endpoint for both sandbox and production
-    'https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer'
+    {
+      access_token: token_response.access_token,
+      refresh_token: token_response.refresh_token,
+      expires_in: token_response.expires_in
+    }
   end
 end
