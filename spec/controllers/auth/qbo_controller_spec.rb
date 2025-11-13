@@ -7,6 +7,31 @@ RSpec.describe Auth::QboController, type: :controller do
     sign_in user
     ENV['QBO_CLIENT_ID'] = 'test_client_id'
     ENV['QBO_CLIENT_SECRET'] = 'test_client_secret'
+
+    # Stub Intuit OpenID discovery document request (SDK makes this on initialization)
+    stub_request(:get, "https://developer.intuit.com/.well-known/openid_sandbox_configuration/")
+      .to_return(
+        status: 200,
+        body: {
+          authorization_endpoint: "https://appcenter.intuit.com/connect/oauth2",
+          token_endpoint: "https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer",
+          revocation_endpoint: "https://developer.api.intuit.com/v2/oauth2/tokens/revoke",
+          userinfo_endpoint: "https://accounts.platform.intuit.com/v1/openid_connect/userinfo",
+          issuer: "https://oauth.platform.intuit.com/op/v1",
+          jwks_uri: "https://oauth.platform.intuit.com/op/v1/jwks"
+        }.to_json,
+        headers: { 'Content-Type' => 'application/json' }
+      )
+  end
+
+  # Helper to create SDK OAuth errors
+  def create_oauth_error(code: 400, body: 'error', intuit_tid: 'test-tid-123')
+    response = double('HTTPResponse',
+      code: code,
+      body: body,
+      headers: { 'intuit_tid' => intuit_tid, 'date' => Time.current.to_s }
+    )
+    IntuitOAuth::OAuth2ClientException.new(response)
   end
 
   describe 'GET #connect' do
@@ -38,11 +63,11 @@ RSpec.describe Auth::QboController, type: :controller do
       # Set session state for OAuth validation
       session[:qbo_oauth_state] = 'test_state_123'
 
-      # Mock the controller's private method directly
+      # Mock the controller's private method directly - SDK returns symbol keys
       allow(controller).to receive(:exchange_code_for_tokens).and_return({
-        'access_token' => 'qbo_access_token_123',
-        'refresh_token' => 'qbo_refresh_token_123',
-        'expires_in' => 3600
+        access_token: 'qbo_access_token_123',
+        refresh_token: 'qbo_refresh_token_123',
+        expires_in: 3600
       })
 
       original_time = Time.current
@@ -61,7 +86,24 @@ RSpec.describe Auth::QboController, type: :controller do
       expect(flash[:notice]).to eq('QuickBooks Online connected successfully!')
     end
 
-    it 'handles failed token exchange' do
+    it 'handles SDK OAuth errors' do
+      # Set session state for OAuth validation
+      session[:qbo_oauth_state] = 'test_state_123'
+
+      # Mock SDK-specific OAuth error
+      oauth_error = create_oauth_error(body: 'invalid_grant', intuit_tid: 'test-tid-123')
+      allow(controller).to receive(:exchange_code_for_tokens).and_raise(oauth_error)
+
+      get :callback, params: { code: 'invalid_code', realmId: 'realm_123', state: 'test_state_123' }
+
+      user.reload
+      expect(user.qbo_realm_id).to be_nil
+
+      expect(response).to redirect_to(dashboard_path)
+      expect(flash[:alert]).to eq('Failed to connect to QuickBooks Online. Please try again.')
+    end
+
+    it 'handles general token exchange failures' do
       # Set session state for OAuth validation
       session[:qbo_oauth_state] = 'test_state_123'
 
@@ -89,16 +131,10 @@ RSpec.describe Auth::QboController, type: :controller do
     end
 
     it 'disconnects QBO and redirects with success message' do
-      # Stub the revoke endpoint call
-      stub_request(:post, "https://developer.api.intuit.com/v2/oauth2/tokens/revoke")
-        .with(
-          body: hash_including("token" => "refresh_123"),
-          headers: {
-            'Authorization' => "Basic #{Base64.strict_encode64('test_client_id:test_client_secret')}",
-            'Content-Type' => 'application/json'
-          }
-        )
-        .to_return(status: 200, body: "", headers: {})
+      # Mock QboService and SDK revoke_tokens! method
+      qbo_service = instance_double(QboService)
+      allow(QboService).to receive(:new).with(user).and_return(qbo_service)
+      allow(qbo_service).to receive(:revoke_tokens!).and_return(true)
 
       delete :disconnect
 
@@ -114,9 +150,10 @@ RSpec.describe Auth::QboController, type: :controller do
     end
 
     it 'handles revocation failure and does not disconnect locally' do
-      # Stub the revoke endpoint to fail
-      stub_request(:post, "https://developer.api.intuit.com/v2/oauth2/tokens/revoke")
-        .to_return(status: 400, body: { error: 'invalid_token' }.to_json, headers: { 'Content-Type' => 'application/json' })
+      # Mock QboService revoke to fail
+      qbo_service = instance_double(QboService)
+      allow(QboService).to receive(:new).with(user).and_return(qbo_service)
+      allow(qbo_service).to receive(:revoke_tokens!).and_return(false)
 
       delete :disconnect
 
@@ -125,6 +162,24 @@ RSpec.describe Auth::QboController, type: :controller do
       expect(user.qbo_realm_id).to eq('realm_123')
       expect(user.qbo_access_token).to eq('token_123')
       expect(user.qbo_refresh_token).to eq('refresh_123')
+
+      expect(response).to redirect_to(dashboard_path)
+      expect(flash[:alert]).to eq('Failed to disconnect from QuickBooks. Please try again or contact support.')
+    end
+
+    it 'handles SDK errors during revocation' do
+      # Mock SDK to raise OAuth error
+      qbo_service = instance_double(QboService)
+      allow(QboService).to receive(:new).with(user).and_return(qbo_service)
+      oauth_error = StandardError.new('Network error')
+      allow(qbo_service).to receive(:revoke_tokens!).and_raise(oauth_error)
+
+      delete :disconnect
+
+      user.reload
+      # Tokens should NOT be cleared when revocation raises error
+      expect(user.qbo_realm_id).to eq('realm_123')
+      expect(user.qbo_access_token).to eq('token_123')
 
       expect(response).to redirect_to(dashboard_path)
       expect(flash[:alert]).to eq('Failed to disconnect from QuickBooks. Please try again or contact support.')

@@ -6,6 +6,31 @@ RSpec.describe QboService, type: :service do
 
   before do
     allow(QboApi).to receive(:production=)
+
+    # Stub Intuit OpenID discovery document request (SDK makes this on initialization)
+    stub_request(:get, "https://developer.intuit.com/.well-known/openid_sandbox_configuration/")
+      .to_return(
+        status: 200,
+        body: {
+          authorization_endpoint: "https://appcenter.intuit.com/connect/oauth2",
+          token_endpoint: "https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer",
+          revocation_endpoint: "https://developer.api.intuit.com/v2/oauth2/tokens/revoke",
+          userinfo_endpoint: "https://accounts.platform.intuit.com/v1/openid_connect/userinfo",
+          issuer: "https://oauth.platform.intuit.com/op/v1",
+          jwks_uri: "https://oauth.platform.intuit.com/op/v1/jwks"
+        }.to_json,
+        headers: { 'Content-Type' => 'application/json' }
+      )
+  end
+
+  # Helper to create SDK OAuth errors
+  def create_oauth_error(code: 400, body: 'error', intuit_tid: 'test-tid-123')
+    response = double('HTTPResponse',
+      code: code,
+      body: body,
+      headers: { 'intuit_tid' => intuit_tid, 'date' => Time.current.to_s }
+    )
+    IntuitOAuth::OAuth2ClientException.new(response)
   end
 
   describe '#initialize' do
@@ -130,38 +155,39 @@ RSpec.describe QboService, type: :service do
     end
 
     context 'when refresh token exists' do
-      it 'attempts to refresh the token' do
-        # Mock the HTTP request to avoid external dependencies
-        allow_any_instance_of(QboService).to receive(:refresh_token!).and_call_original
-        
-        # Mock the actual HTTP call
-        mock_connection = double('Faraday::Connection')
-        mock_response = double('Faraday::Response', success?: true, body: {
-          'access_token' => 'new_access_token',
-          'refresh_token' => 'new_refresh_token', 
-          'expires_in' => 3600
-        })
-        
-        allow(Faraday).to receive(:new).and_return(mock_connection)
-        allow(mock_connection).to receive(:post).and_return(mock_response)
+      let(:mock_oauth_client) { double('IntuitOAuth::Client') }
+      let(:mock_token) { double('IntuitOAuth Token') }
+
+      before do
+        allow(IntuitOAuth::Client).to receive(:new).and_return(mock_oauth_client)
+        allow(mock_oauth_client).to receive(:token).and_return(mock_token)
+      end
+
+      it 'attempts to refresh the token using SDK' do
+        # Mock SDK token response
+        token_response = double('TokenResponse',
+          access_token: 'new_access_token',
+          refresh_token: 'new_refresh_token',
+          expires_in: 3600
+        )
+
+        allow(mock_token).to receive(:refresh_tokens).with(user.qbo_refresh_token).and_return(token_response)
 
         original_time = Time.current
         allow(Time).to receive(:current).and_return(original_time)
 
         expect(qbo_service.refresh_token!).to be true
-        
+
         user.reload
         expect(user.qbo_access_token).to eq('new_access_token')
         expect(user.qbo_refresh_token).to eq('new_refresh_token')
         expect(user.qbo_token_expires_at).to be_within(1.second).of(original_time + 3600.seconds)
       end
 
-      it 'handles refresh failure gracefully' do
-        mock_connection = double('Faraday::Connection')
-        mock_response = double('Faraday::Response', success?: false, body: { 'error' => 'invalid_grant' }, status: 400)
+      it 'handles SDK OAuth exceptions gracefully' do
+        oauth_error = create_oauth_error(body: 'token_refresh_failed', intuit_tid: 'test-tid-123')
 
-        allow(Faraday).to receive(:new).and_return(mock_connection)
-        allow(mock_connection).to receive(:post).and_return(mock_response)
+        allow(mock_token).to receive(:refresh_tokens).and_raise(oauth_error)
         allow(Rails.logger).to receive(:error)
 
         original_token = user.qbo_access_token
@@ -172,16 +198,10 @@ RSpec.describe QboService, type: :service do
         expect(Rails.logger).to have_received(:error)
       end
 
-      it 'handles invalid_grant error specifically' do
-        mock_connection = double('Faraday::Connection')
-        mock_response = double('Faraday::Response',
-          success?: false,
-          body: { 'error' => 'invalid_grant', 'error_description' => 'Refresh token expired' },
-          status: 400
-        )
+      it 'handles invalid_grant error specifically and clears refresh token' do
+        oauth_error = create_oauth_error(body: 'invalid_grant: Refresh token expired', intuit_tid: 'test-tid-456')
 
-        allow(Faraday).to receive(:new).and_return(mock_connection)
-        allow(mock_connection).to receive(:post).and_return(mock_response)
+        allow(mock_token).to receive(:refresh_tokens).and_raise(oauth_error)
         allow(Rails.logger).to receive(:error)
 
         expect(qbo_service.refresh_token!).to be false
@@ -191,33 +211,19 @@ RSpec.describe QboService, type: :service do
         expect(Rails.logger).to have_received(:error).with(/invalid_grant/)
       end
 
-      it 'logs detailed error information with status code' do
-        mock_connection = double('Faraday::Connection')
-        mock_response = double('Faraday::Response',
-          success?: false,
-          body: { 'error' => 'server_error', 'error_description' => 'Internal error' },
-          status: 500
-        )
+      it 'logs detailed error information with intuit_tid' do
+        oauth_error = create_oauth_error(code: 500, body: 'server_error', intuit_tid: 'test-tid-789')
 
-        allow(Faraday).to receive(:new).and_return(mock_connection)
-        allow(mock_connection).to receive(:post).and_return(mock_response)
+        allow(mock_token).to receive(:refresh_tokens).and_raise(oauth_error)
         allow(Rails.logger).to receive(:error)
 
         qbo_service.refresh_token!
 
-        expect(Rails.logger).to have_received(:error).with(/QBO token refresh failed/)
-      end
-
-      it 'handles Faraday exceptions gracefully' do
-        allow(Faraday).to receive(:new).and_raise(Faraday::Error, 'Network error')
-        allow(Rails.logger).to receive(:error)
-
-        expect(qbo_service.refresh_token!).to be false
-        expect(Rails.logger).to have_received(:error)
+        expect(Rails.logger).to have_received(:error).with(/QBO OAuth error/)
       end
 
       it 'handles standard exceptions gracefully' do
-        allow(Faraday).to receive(:new).and_raise(StandardError, 'Unexpected error')
+        allow(mock_token).to receive(:refresh_tokens).and_raise(StandardError, 'Unexpected error')
         allow(Rails.logger).to receive(:error)
 
         expect(qbo_service.refresh_token!).to be false
@@ -225,58 +231,70 @@ RSpec.describe QboService, type: :service do
       end
 
       it 'logs successful token refresh' do
-        mock_connection = double('Faraday::Connection')
-        mock_response = double('Faraday::Response', success?: true, body: {
-          'access_token' => 'new_access_token',
-          'refresh_token' => 'new_refresh_token',
-          'expires_in' => 3600
-        })
+        token_response = double('TokenResponse',
+          access_token: 'new_access_token',
+          refresh_token: 'new_refresh_token',
+          expires_in: 3600
+        )
 
-        allow(Faraday).to receive(:new).and_return(mock_connection)
-        allow(mock_connection).to receive(:post).and_return(mock_response)
+        allow(mock_token).to receive(:refresh_tokens).and_return(token_response)
         allow(Rails.logger).to receive(:info)
 
         qbo_service.refresh_token!
 
         expect(Rails.logger).to have_received(:info).with(/QBO token refreshed successfully/)
       end
+
+      it 'updates the QboApi instance with new access token' do
+        token_response = double('TokenResponse',
+          access_token: 'new_access_token',
+          refresh_token: 'new_refresh_token',
+          expires_in: 3600
+        )
+
+        allow(mock_token).to receive(:refresh_tokens).and_return(token_response)
+
+        # Allow the initial QboApi.new call during service initialization
+        allow(QboApi).to receive(:new).and_call_original
+
+        # Create a fresh service to test the refresh
+        service = qbo_service
+
+        # Expect a new QboApi instance to be created with the new token
+        expect(QboApi).to receive(:new).with(
+          access_token: 'new_access_token',
+          realm_id: user.qbo_realm_id
+        ).and_call_original
+
+        service.refresh_token!
+      end
     end
   end
 
   describe '#revoke_tokens!' do
+    let(:mock_oauth_client) { double('IntuitOAuth::Client') }
+    let(:mock_token) { double('IntuitOAuth Token') }
+
     before do
       ENV['QBO_CLIENT_ID'] = 'test_client_id'
       ENV['QBO_CLIENT_SECRET'] = 'test_client_secret'
+
+      allow(IntuitOAuth::Client).to receive(:new).and_return(mock_oauth_client)
+      allow(mock_oauth_client).to receive(:token).and_return(mock_token)
     end
 
     context 'when user has refresh token' do
-      it 'revokes the refresh token successfully' do
-        mock_connection = double('Faraday::Connection')
-        mock_response = double('Faraday::Response', success?: true, body: {})
-
-        allow(Faraday).to receive(:new).and_return(mock_connection)
-        allow(mock_connection).to receive(:post).and_return(mock_response)
+      it 'revokes the refresh token successfully using SDK' do
+        allow(mock_token).to receive(:revoke_tokens).with(user.qbo_refresh_token).and_return(true)
         allow(Rails.logger).to receive(:info)
 
         expect(qbo_service.revoke_tokens!).to be true
         expect(Rails.logger).to have_received(:info).with(/QBO.*revoked successfully/)
       end
 
-      it 'sends the refresh token to the revoke endpoint' do
-        mock_connection = double('Faraday::Connection')
-        mock_response = double('Faraday::Response', success?: true, body: {})
-
-        allow(Faraday).to receive(:new).and_return(mock_connection)
-        expect(mock_connection).to receive(:post).with('/v2/oauth2/tokens/revoke') do |&block|
-          req = double('request', headers: {}, body: nil)
-          allow(req).to receive(:headers=)
-          allow(req).to receive(:[]=)
-          allow(req).to receive(:body=) do |body|
-            expect(JSON.parse(body)['token']).to eq(user.qbo_refresh_token)
-          end
-          block.call(req)
-          mock_response
-        end
+      it 'sends the refresh token to SDK revoke method' do
+        expect(mock_token).to receive(:revoke_tokens).with(user.qbo_refresh_token)
+        allow(Rails.logger).to receive(:info)
 
         qbo_service.revoke_tokens!
       end
@@ -287,21 +305,9 @@ RSpec.describe QboService, type: :service do
         user.update(qbo_refresh_token: nil)
       end
 
-      it 'revokes the access token as fallback' do
-        mock_connection = double('Faraday::Connection')
-        mock_response = double('Faraday::Response', success?: true, body: {})
-
-        allow(Faraday).to receive(:new).and_return(mock_connection)
-        expect(mock_connection).to receive(:post).with('/v2/oauth2/tokens/revoke') do |&block|
-          req = double('request', headers: {}, body: nil)
-          allow(req).to receive(:headers=)
-          allow(req).to receive(:[]=)
-          allow(req).to receive(:body=) do |body|
-            expect(JSON.parse(body)['token']).to eq(user.qbo_access_token)
-          end
-          block.call(req)
-          mock_response
-        end
+      it 'revokes the access token as fallback using SDK' do
+        expect(mock_token).to receive(:revoke_tokens).with(user.qbo_access_token)
+        allow(Rails.logger).to receive(:info)
 
         expect(qbo_service.revoke_tokens!).to be true
       end
@@ -322,35 +328,21 @@ RSpec.describe QboService, type: :service do
       end
     end
 
-    context 'when revocation fails' do
+    context 'when revocation fails with SDK OAuth error' do
       it 'returns false and logs error' do
-        mock_connection = double('Faraday::Connection')
-        mock_response = double('Faraday::Response',
-          success?: false,
-          body: { 'error' => 'invalid_token' },
-          status: 400
-        )
+        oauth_error = create_oauth_error(body: 'invalid_token', intuit_tid: 'test-tid-999')
 
-        allow(Faraday).to receive(:new).and_return(mock_connection)
-        allow(mock_connection).to receive(:post).and_return(mock_response)
+        allow(mock_token).to receive(:revoke_tokens).and_raise(oauth_error)
         allow(Rails.logger).to receive(:error)
 
         expect(qbo_service.revoke_tokens!).to be false
-        expect(Rails.logger).to have_received(:error).with(/QBO token revocation failed/)
+        expect(Rails.logger).to have_received(:error).with(/QBO OAuth error/)
       end
     end
 
     context 'when network error occurs' do
-      it 'handles Faraday exceptions gracefully' do
-        allow(Faraday).to receive(:new).and_raise(Faraday::Error, 'Network error')
-        allow(Rails.logger).to receive(:error)
-
-        expect(qbo_service.revoke_tokens!).to be false
-        expect(Rails.logger).to have_received(:error)
-      end
-
       it 'handles standard exceptions gracefully' do
-        allow(Faraday).to receive(:new).and_raise(StandardError, 'Unexpected error')
+        allow(mock_token).to receive(:revoke_tokens).and_raise(StandardError, 'Unexpected error')
         allow(Rails.logger).to receive(:error)
 
         expect(qbo_service.revoke_tokens!).to be false
