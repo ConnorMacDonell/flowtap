@@ -56,15 +56,36 @@ RSpec.describe QboService, type: :service do
       let(:user) { create(:user) }
 
       it 'raises ArgumentError when user has no QBO connection' do
-        expect { described_class.new(user) }.to raise_error(ArgumentError, 'User must have valid QBO connection')
+        expect { described_class.new(user) }.to raise_error(ArgumentError, /User must have valid QBO connection or ability to refresh/)
       end
     end
 
     context 'with expired token' do
       let(:user) { create(:user, :with_expired_qbo_token) }
 
-      it 'raises ArgumentError when token is expired' do
-        expect { described_class.new(user) }.to raise_error(ArgumentError, 'User must have valid QBO connection')
+      context 'when user can refresh' do
+        before do
+          # Ensure user has refresh token and connection is within 180 days
+          user.update(
+            qbo_refresh_token: 'valid_refresh_token',
+            qbo_connected_at: 30.days.ago
+          )
+        end
+
+        it 'allows initialization if user can refresh expired token' do
+          expect { described_class.new(user) }.not_to raise_error
+        end
+      end
+
+      context 'when user cannot refresh' do
+        before do
+          # Remove refresh token so user can't refresh
+          user.update(qbo_refresh_token: nil)
+        end
+
+        it 'raises ArgumentError when token is expired and cannot be refreshed' do
+          expect { described_class.new(user) }.to raise_error(ArgumentError, /User must have valid QBO connection or ability to refresh/)
+        end
       end
     end
   end
@@ -80,6 +101,8 @@ RSpec.describe QboService, type: :service do
 
     before do
       allow(QboApi).to receive(:new).and_return(mock_qbo_api)
+      # Set token to be valid for 30 days (no proactive refresh needed)
+      user.update(qbo_token_expires_at: 30.days.from_now)
     end
 
     context 'when connection is successful' do
@@ -347,6 +370,217 @@ RSpec.describe QboService, type: :service do
 
         expect(qbo_service.revoke_tokens!).to be false
         expect(Rails.logger).to have_received(:error)
+      end
+    end
+  end
+
+  describe 'automatic token refresh' do
+    let(:mock_qbo_api) { instance_double(QboApi) }
+    let(:mock_oauth_client) { double('IntuitOAuth::Client') }
+    let(:mock_token) { double('IntuitOAuth Token') }
+
+    before do
+      ENV['QBO_CLIENT_ID'] = 'test_client_id'
+      ENV['QBO_CLIENT_SECRET'] = 'test_client_secret'
+
+      allow(QboApi).to receive(:new).and_return(mock_qbo_api)
+      allow(IntuitOAuth::Client).to receive(:new).and_return(mock_oauth_client)
+      allow(mock_oauth_client).to receive(:token).and_return(mock_token)
+    end
+
+    describe 'proactive token refresh' do
+      context 'when token expires soon' do
+        before do
+          # Set token to expire in 5 days (within 7 day threshold)
+          user.update(qbo_token_expires_at: 5.days.from_now)
+          allow(Rails.logger).to receive(:info)
+        end
+
+        it 'proactively refreshes token before API call' do
+          token_response = double('TokenResponse',
+            access_token: 'new_access_token',
+            refresh_token: 'new_refresh_token',
+            expires_in: 3600
+          )
+
+          allow(mock_token).to receive(:refresh_tokens).and_return(token_response)
+          allow(mock_qbo_api).to receive(:get).with(:companyinfo, 1).and_return({ 'Id' => '1' })
+
+          qbo_service.test_connection
+
+          expect(Rails.logger).to have_received(:info).with(/Proactively refreshing token/)
+          user.reload
+          expect(user.qbo_access_token).to eq('new_access_token')
+          expect(user.qbo_refresh_token).to eq('new_refresh_token')
+        end
+
+        it 'reloads user after proactive refresh' do
+          token_response = double('TokenResponse',
+            access_token: 'new_access_token',
+            refresh_token: 'new_refresh_token',
+            expires_in: 3600
+          )
+
+          allow(mock_token).to receive(:refresh_tokens).and_return(token_response)
+          allow(mock_qbo_api).to receive(:get).with(:companyinfo, 1).and_return({ 'Id' => '1' })
+
+          expect(user).to receive(:reload)
+          qbo_service.test_connection
+        end
+      end
+
+      context 'when token is still valid' do
+        before do
+          # Set token to expire in 30 days (beyond 7 day threshold)
+          user.update(qbo_token_expires_at: 30.days.from_now)
+        end
+
+        it 'does not refresh token' do
+          allow(mock_qbo_api).to receive(:get).with(:companyinfo, 1).and_return({ 'Id' => '1' })
+
+          expect(mock_token).not_to receive(:refresh_tokens)
+          qbo_service.test_connection
+        end
+      end
+    end
+
+    describe 'reactive token refresh on 401 errors' do
+      before do
+        # Token is valid, so no proactive refresh
+        user.update(qbo_token_expires_at: 30.days.from_now)
+        allow(Rails.logger).to receive(:info)
+        allow(Rails.logger).to receive(:error)
+      end
+
+      it 'catches 401 error and refreshes token' do
+        # Create a mock 401 response
+        unauthorized_response = double('HTTPResponse')
+        allow(unauthorized_response).to receive(:[]).with(:error_body).and_return('Unauthorized')
+        allow(unauthorized_response).to receive(:[]).with(:request_body).and_return('')
+        unauthorized_error = QboApi::Unauthorized.new(unauthorized_response)
+
+        token_response = double('TokenResponse',
+          access_token: 'refreshed_access_token',
+          refresh_token: 'refreshed_refresh_token',
+          expires_in: 3600
+        )
+
+        # First call raises 401, second call (after refresh) succeeds
+        expect(mock_qbo_api).to receive(:get).with(:companyinfo, 1)
+          .and_raise(unauthorized_error).ordered
+        expect(mock_token).to receive(:refresh_tokens).and_return(token_response).ordered
+        expect(mock_qbo_api).to receive(:get).with(:companyinfo, 1)
+          .and_return({ 'Id' => '1' }).ordered
+
+        result = qbo_service.test_connection
+
+        expect(result).to be true
+        expect(Rails.logger).to have_received(:info).with(/Attempting token refresh due to 401/)
+        user.reload
+        expect(user.qbo_access_token).to eq('refreshed_access_token')
+        expect(user.qbo_refresh_token).to eq('refreshed_refresh_token')
+      end
+
+      it 'reloads user after reactive refresh' do
+        unauthorized_response = double('HTTPResponse')
+        allow(unauthorized_response).to receive(:[]).with(:error_body).and_return('Unauthorized')
+        allow(unauthorized_response).to receive(:[]).with(:request_body).and_return('')
+        unauthorized_error = QboApi::Unauthorized.new(unauthorized_response)
+
+        token_response = double('TokenResponse',
+          access_token: 'refreshed_access_token',
+          refresh_token: 'refreshed_refresh_token',
+          expires_in: 3600
+        )
+
+        expect(mock_qbo_api).to receive(:get).with(:companyinfo, 1)
+          .and_raise(unauthorized_error).ordered
+        expect(mock_token).to receive(:refresh_tokens).and_return(token_response).ordered
+        expect(user).to receive(:reload).ordered
+        expect(mock_qbo_api).to receive(:get).with(:companyinfo, 1)
+          .and_return({ 'Id' => '1' }).ordered
+
+        qbo_service.test_connection
+      end
+
+      it 'only attempts refresh once per request' do
+        unauthorized_response = double('HTTPResponse')
+        allow(unauthorized_response).to receive(:[]).with(:error_body).and_return('Unauthorized')
+        allow(unauthorized_response).to receive(:[]).with(:request_body).and_return('')
+        allow(unauthorized_response).to receive(:response).and_return({ 'Fault' => { 'intuit_tid' => 'test-tid' } })
+        unauthorized_error = QboApi::Unauthorized.new(unauthorized_response)
+
+        token_response = double('TokenResponse',
+          access_token: 'refreshed_access_token',
+          refresh_token: 'refreshed_refresh_token',
+          expires_in: 3600
+        )
+
+        # First call raises 401, triggering refresh
+        # Second call (after refresh) also raises 401, should not refresh again and return false
+        expect(mock_qbo_api).to receive(:get).with(:companyinfo, 1)
+          .and_raise(unauthorized_error).ordered
+        expect(mock_token).to receive(:refresh_tokens).and_return(token_response).once.ordered
+        expect(user).to receive(:reload).ordered
+        expect(mock_qbo_api).to receive(:get).with(:companyinfo, 1)
+          .and_raise(unauthorized_error).ordered
+
+        result = qbo_service.test_connection
+
+        expect(result).to be false
+      end
+
+      it 'returns false if token refresh fails' do
+        unauthorized_response = double('HTTPResponse')
+        allow(unauthorized_response).to receive(:[]).with(:error_body).and_return('Unauthorized')
+        allow(unauthorized_response).to receive(:[]).with(:request_body).and_return('')
+        unauthorized_error = QboApi::Unauthorized.new(unauthorized_response)
+
+        oauth_error = create_oauth_error(body: 'invalid_grant', intuit_tid: 'test-tid')
+
+        allow(mock_qbo_api).to receive(:get).with(:companyinfo, 1)
+          .and_raise(unauthorized_error)
+        allow(mock_token).to receive(:refresh_tokens).and_raise(oauth_error)
+
+        result = qbo_service.test_connection
+
+        expect(result).to be false
+        expect(Rails.logger).to have_received(:error).with(/Token refresh failed/)
+      end
+
+      it 'does not attempt refresh if user cannot refresh' do
+        # Remove refresh token so user can't refresh
+        user.update(qbo_refresh_token: nil)
+
+        unauthorized_response = double('HTTPResponse')
+        allow(unauthorized_response).to receive(:[]).with(:error_body).and_return('Unauthorized')
+        allow(unauthorized_response).to receive(:[]).with(:request_body).and_return('')
+        unauthorized_error = QboApi::Unauthorized.new(unauthorized_response)
+
+        allow(mock_qbo_api).to receive(:get).with(:companyinfo, 1)
+          .and_raise(unauthorized_error)
+
+        expect(mock_token).not_to receive(:refresh_tokens)
+        result = qbo_service.test_connection
+        expect(result).to be false
+      end
+    end
+
+    describe 'token refresh flag management' do
+      it 'resets token_refresh_attempted flag after successful refresh' do
+        token_response = double('TokenResponse',
+          access_token: 'new_access_token',
+          refresh_token: 'new_refresh_token',
+          expires_in: 3600
+        )
+
+        allow(mock_token).to receive(:refresh_tokens).and_return(token_response)
+
+        service = qbo_service
+        service.refresh_token!
+
+        # The flag should be reset after successful refresh
+        expect(service.instance_variable_get(:@token_refresh_attempted)).to be false
       end
     end
   end

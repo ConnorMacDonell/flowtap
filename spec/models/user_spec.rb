@@ -119,8 +119,7 @@ RSpec.describe User, type: :model do
           password: 'password123',
           first_name: 'John',
           last_name: 'Doe',
-          timezone: 'America/New_York',
-          eula_accepted: true
+          timezone: 'America/New_York'
         }
 
         user = User.new(user_params)
@@ -134,8 +133,7 @@ RSpec.describe User, type: :model do
           password: 'password123',
           first_name: 'John',
           last_name: 'Doe',
-          timezone: 'America/New_York',
-          eula_accepted: true
+          timezone: 'America/New_York'
         }
 
         user = User.create!(user_params)
@@ -435,6 +433,189 @@ RSpec.describe User, type: :model do
         user.disconnect_freelancer!
         expect(user.freelancer_connected?).to be false
       end
+    end
+  end
+
+  describe 'soft_delete! and OAuth token revocation' do
+    let(:subscription_service) { instance_double(StripeSubscriptionService) }
+
+    before do
+      # Mock Stripe subscription service
+      allow(StripeSubscriptionService).to receive(:new).with(user).and_return(subscription_service)
+      allow(subscription_service).to receive(:cancel_subscription).and_return(true)
+    end
+
+    context 'when user has QBO connection' do
+      before do
+        user.update(
+          qbo_realm_id: '123456',
+          qbo_access_token: 'token123',
+          qbo_refresh_token: 'refresh123',
+          qbo_token_expires_at: 1.hour.from_now,
+          qbo_connected_at: Time.current,
+          qbo_id_token: 'id_token_123',
+          qbo_sub_id: 'sub_123'
+        )
+      end
+
+      it 'revokes QBO tokens before deletion' do
+        qbo_service = instance_double(QboService)
+        expect(QboService).to receive(:new).with(user).and_return(qbo_service)
+        expect(qbo_service).to receive(:revoke_tokens!).and_return(true)
+
+        user.soft_delete!
+      end
+
+      it 'clears all QBO OAuth data after revocation' do
+        qbo_service = instance_double(QboService)
+        allow(QboService).to receive(:new).with(user).and_return(qbo_service)
+        allow(qbo_service).to receive(:revoke_tokens!).and_return(true)
+
+        user.soft_delete!
+        user.reload
+
+        expect(user.qbo_realm_id).to be_nil
+        expect(user.qbo_access_token).to be_nil
+        expect(user.qbo_refresh_token).to be_nil
+        expect(user.qbo_token_expires_at).to be_nil
+        expect(user.qbo_connected_at).to be_nil
+        expect(user.qbo_id_token).to be_nil
+        expect(user.qbo_sub_id).to be_nil
+      end
+
+      it 'still proceeds with deletion even if QBO revocation fails' do
+        qbo_service = instance_double(QboService)
+        allow(QboService).to receive(:new).with(user).and_return(qbo_service)
+        allow(qbo_service).to receive(:revoke_tokens!).and_return(false)
+
+        expect { user.soft_delete! }.not_to raise_error
+        expect(user.reload.deleted?).to be true
+      end
+
+      it 'handles QboService initialization errors gracefully' do
+        allow(QboService).to receive(:new).with(user).and_raise(ArgumentError, 'Token expired')
+
+        expect { user.soft_delete! }.not_to raise_error
+        expect(user.reload.deleted?).to be true
+      end
+    end
+
+    context 'when user has Freelancer connection' do
+      before do
+        user.update(
+          freelancer_user_id: '12345',
+          freelancer_access_token: 'token123',
+          freelancer_refresh_token: 'refresh123',
+          freelancer_token_expires_at: 1.hour.from_now,
+          freelancer_connected_at: Time.current,
+          freelancer_scopes: 'basic'
+        )
+      end
+
+      it 'clears all Freelancer OAuth data on deletion' do
+        user.soft_delete!
+        user.reload
+
+        expect(user.freelancer_user_id).to be_nil
+        expect(user.freelancer_access_token).to be_nil
+        expect(user.freelancer_refresh_token).to be_nil
+        expect(user.freelancer_token_expires_at).to be_nil
+        expect(user.freelancer_connected_at).to be_nil
+        expect(user.freelancer_scopes).to be_nil
+      end
+
+      it 'logs Freelancer token handling and data clearing' do
+        expect(Rails.logger).to receive(:info).with(/Freelancer tokens for user #{user.id} will expire naturally/)
+        expect(Rails.logger).to receive(:info).with(/Account deletion: Cleared Freelancer OAuth data for user #{user.id}/)
+        user.soft_delete!
+      end
+    end
+
+    context 'when user has both QBO and Freelancer connections' do
+      before do
+        user.update(
+          qbo_realm_id: '123456',
+          qbo_access_token: 'qbo_token',
+          qbo_refresh_token: 'qbo_refresh',
+          qbo_token_expires_at: 1.hour.from_now,
+          qbo_connected_at: Time.current,
+          freelancer_user_id: '12345',
+          freelancer_access_token: 'fl_token',
+          freelancer_refresh_token: 'fl_refresh',
+          freelancer_token_expires_at: 1.hour.from_now,
+          freelancer_connected_at: Time.current
+        )
+      end
+
+      it 'revokes QBO tokens and clears both QBO and Freelancer data' do
+        qbo_service = instance_double(QboService)
+        allow(QboService).to receive(:new).with(user).and_return(qbo_service)
+        allow(qbo_service).to receive(:revoke_tokens!).and_return(true)
+
+        user.soft_delete!
+        user.reload
+
+        # QBO data cleared
+        expect(user.qbo_realm_id).to be_nil
+        expect(user.qbo_access_token).to be_nil
+
+        # Freelancer data cleared
+        expect(user.freelancer_user_id).to be_nil
+        expect(user.freelancer_access_token).to be_nil
+      end
+    end
+
+    context 'when user is QBO SSO user' do
+      before do
+        user.update(
+          qbo_sub_id: 'sso_sub_123',
+          qbo_realm_id: '123456',
+          qbo_access_token: 'token123',
+          qbo_refresh_token: 'refresh123',
+          qbo_token_expires_at: 1.hour.from_now,
+          qbo_connected_at: Time.current,
+          qbo_user_email: 'sso@example.com'
+        )
+      end
+
+      it 'revokes tokens and clears all QBO SSO data' do
+        qbo_service = instance_double(QboService)
+        allow(QboService).to receive(:new).with(user).and_return(qbo_service)
+        allow(qbo_service).to receive(:revoke_tokens!).and_return(true)
+
+        user.soft_delete!
+        user.reload
+
+        expect(user.qbo_sub_id).to be_nil
+        expect(user.qbo_user_email).to be_nil
+        expect(user.qbo_realm_id).to be_nil
+      end
+    end
+
+    context 'when user has no OAuth connections' do
+      it 'does not attempt to revoke any tokens' do
+        expect(QboService).not_to receive(:new)
+
+        user.soft_delete!
+        expect(user.reload.deleted?).to be true
+      end
+    end
+
+    it 'marks user as deleted' do
+      user.soft_delete!
+      expect(user.reload.deleted?).to be true
+      expect(user.deleted_at).to be_present
+    end
+
+    it 'cancels Stripe subscription before deletion' do
+      expect(subscription_service).to receive(:cancel_subscription).with(immediate: true)
+      user.soft_delete!
+    end
+
+    it 'raises error if Stripe cancellation fails' do
+      allow(subscription_service).to receive(:cancel_subscription).and_raise(Stripe::StripeError.new('Cancellation failed'))
+
+      expect { user.soft_delete! }.to raise_error(ActiveRecord::RecordInvalid, /Cannot delete account/)
     end
   end
 end

@@ -35,12 +35,15 @@ RSpec.describe Auth::QboController, type: :controller do
   end
 
   describe 'GET #connect' do
-    it 'redirects to QBO authorization URL' do
+    it 'redirects to QBO authorization URL with OpenID scopes' do
       get :connect
-      
+
       expect(response).to redirect_to(/appcenter/)
       expect(response.location).to include('client_id=test_client_id')
       expect(response.location).to include('scope=com.intuit.quickbooks.accounting')
+      expect(response.location).to include('openid')
+      expect(response.location).to include('profile')
+      expect(response.location).to include('email')
     end
 
     it 'uses standard authorization URL' do
@@ -67,7 +70,18 @@ RSpec.describe Auth::QboController, type: :controller do
       allow(controller).to receive(:exchange_code_for_tokens).and_return({
         access_token: 'qbo_access_token_123',
         refresh_token: 'qbo_refresh_token_123',
-        expires_in: 3600
+        expires_in: 3600,
+        id_token: 'qbo_id_token_123'
+      })
+
+      # Mock OpenID Connect validation and user info retrieval
+      allow(QboService).to receive(:validate_id_token).and_return(true)
+      allow(QboService).to receive(:fetch_user_info).and_return({
+        sub: 'qbo_user_sub_123',
+        email: 'user@example.com',
+        email_verified: true,
+        given_name: 'John',
+        family_name: 'Doe'
       })
 
       original_time = Time.current
@@ -81,6 +95,12 @@ RSpec.describe Auth::QboController, type: :controller do
       expect(user.qbo_refresh_token).to eq('qbo_refresh_token_123')
       expect(user.qbo_token_expires_at).to be_within(1.second).of(original_time + 3600.seconds)
       expect(user.qbo_connected_at).to be_within(1.second).of(original_time)
+      expect(user.qbo_id_token).to eq('qbo_id_token_123')
+      expect(user.qbo_sub_id).to eq('qbo_user_sub_123')
+      expect(user.qbo_user_email).to eq('user@example.com')
+      expect(user.qbo_user_email_verified).to be true
+      expect(user.qbo_user_given_name).to eq('John')
+      expect(user.qbo_user_family_name).to eq('Doe')
 
       expect(response).to redirect_to(dashboard_path)
       expect(flash[:notice]).to eq('QuickBooks Online connected successfully!')
@@ -117,6 +137,82 @@ RSpec.describe Auth::QboController, type: :controller do
       expect(response).to redirect_to(dashboard_path)
       expect(flash[:alert]).to eq('Failed to connect to QuickBooks Online. Please try again.')
     end
+
+    it 'rejects connection when ID token validation fails' do
+      session[:qbo_oauth_state] = 'test_state_123'
+
+      allow(controller).to receive(:exchange_code_for_tokens).and_return({
+        access_token: 'qbo_access_token_123',
+        refresh_token: 'qbo_refresh_token_123',
+        expires_in: 3600,
+        id_token: 'invalid_id_token'
+      })
+
+      # Mock ID token validation to fail
+      allow(QboService).to receive(:validate_id_token).and_return(false)
+
+      get :callback, params: { code: 'auth_code_123', realmId: 'realm_123', state: 'test_state_123' }
+
+      user.reload
+      expect(user.qbo_realm_id).to be_nil
+      expect(user.qbo_id_token).to be_nil
+
+      expect(response).to redirect_to(dashboard_path)
+      expect(flash[:alert]).to eq('Failed to validate QuickBooks identity. Please try again.')
+    end
+
+    it 'rejects connection when user info fetch fails' do
+      session[:qbo_oauth_state] = 'test_state_123'
+
+      allow(controller).to receive(:exchange_code_for_tokens).and_return({
+        access_token: 'qbo_access_token_123',
+        refresh_token: 'qbo_refresh_token_123',
+        expires_in: 3600,
+        id_token: 'qbo_id_token_123'
+      })
+
+      allow(QboService).to receive(:validate_id_token).and_return(true)
+      allow(QboService).to receive(:fetch_user_info).and_return(nil)
+
+      get :callback, params: { code: 'auth_code_123', realmId: 'realm_123', state: 'test_state_123' }
+
+      user.reload
+      expect(user.qbo_realm_id).to be_nil
+      expect(user.qbo_user_email).to be_nil
+
+      expect(response).to redirect_to(dashboard_path)
+      expect(flash[:alert]).to eq('Failed to retrieve user information from QuickBooks. Please try again.')
+    end
+
+    it 'rejects connection when email is not verified' do
+      session[:qbo_oauth_state] = 'test_state_123'
+
+      allow(controller).to receive(:exchange_code_for_tokens).and_return({
+        access_token: 'qbo_access_token_123',
+        refresh_token: 'qbo_refresh_token_123',
+        expires_in: 3600,
+        id_token: 'qbo_id_token_123'
+      })
+
+      allow(QboService).to receive(:validate_id_token).and_return(true)
+      allow(QboService).to receive(:fetch_user_info).and_return({
+        sub: 'qbo_user_sub_123',
+        email: 'user@example.com',
+        email_verified: false,
+        given_name: 'John',
+        family_name: 'Doe'
+      })
+
+      get :callback, params: { code: 'auth_code_123', realmId: 'realm_123', state: 'test_state_123' }
+
+      user.reload
+      expect(user.qbo_realm_id).to be_nil
+      expect(user.qbo_user_email).to be_nil
+      expect(user.qbo_user_email_verified).to be_nil
+
+      expect(response).to redirect_to(dashboard_path)
+      expect(flash[:alert]).to eq('Your QuickBooks email is not verified. Please verify your email with Intuit and try again.')
+    end
   end
 
   describe 'DELETE #disconnect' do
@@ -126,11 +222,17 @@ RSpec.describe Auth::QboController, type: :controller do
         qbo_access_token: 'token_123',
         qbo_refresh_token: 'refresh_123',
         qbo_token_expires_at: 1.hour.from_now,
-        qbo_connected_at: Time.current
+        qbo_connected_at: Time.current,
+        qbo_id_token: 'id_token_123',
+        qbo_sub_id: 'sub_123',
+        qbo_user_email: 'user@example.com',
+        qbo_user_email_verified: true,
+        qbo_user_given_name: 'John',
+        qbo_user_family_name: 'Doe'
       )
     end
 
-    it 'disconnects QBO and redirects with success message' do
+    it 'disconnects QBO and clears all OAuth and OpenID fields' do
       # Mock QboService and SDK revoke_tokens! method
       qbo_service = instance_double(QboService)
       allow(QboService).to receive(:new).with(user).and_return(qbo_service)
@@ -144,6 +246,12 @@ RSpec.describe Auth::QboController, type: :controller do
       expect(user.qbo_refresh_token).to be_nil
       expect(user.qbo_token_expires_at).to be_nil
       expect(user.qbo_connected_at).to be_nil
+      expect(user.qbo_id_token).to be_nil
+      expect(user.qbo_sub_id).to be_nil
+      expect(user.qbo_user_email).to be_nil
+      expect(user.qbo_user_email_verified).to be_nil
+      expect(user.qbo_user_given_name).to be_nil
+      expect(user.qbo_user_family_name).to be_nil
 
       expect(response).to redirect_to(dashboard_path)
       expect(flash[:notice]).to eq('QuickBooks Online disconnected successfully.')

@@ -30,8 +30,7 @@ RSpec.describe Users::RegistrationsController, type: :controller do
           password_confirmation: 'password123',
           first_name: 'John',
           last_name: 'Doe',
-          timezone: 'America/New_York',
-          eula_accepted: '1'
+          timezone: 'America/New_York'
         }
       }
     end

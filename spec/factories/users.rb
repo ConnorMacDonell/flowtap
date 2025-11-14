@@ -6,7 +6,6 @@ FactoryBot.define do
     last_name { 'Doe' }
     timezone { 'UTC' }
     confirmed_at { Time.current }
-    eula_accepted { true }
     eula_accepted_at { Time.current }
     privacy_policy_accepted_at { Time.current }
 
