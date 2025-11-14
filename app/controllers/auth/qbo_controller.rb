@@ -53,7 +53,7 @@ class Auth::QboController < ApplicationController
         qbo_token_expires_at: Time.current + token_response[:expires_in].seconds,
         qbo_connected_at: Time.current,
         qbo_id_token: token_response[:id_token],
-        qbo_user_sub: user_info[:sub],
+        qbo_sub_id: user_info[:sub],
         qbo_user_email: user_info[:email],
         qbo_user_email_verified: user_info[:email_verified],
         qbo_user_given_name: user_info[:given_name],
