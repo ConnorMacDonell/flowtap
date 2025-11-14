@@ -38,7 +38,15 @@ Rails.application.routes.draw do
   # Stripe webhook (public)
   post '/stripe/webhooks', to: 'stripe_webhooks#create'
   
-  # OAuth2 routes (protected)
+  # OAuth2 SSO routes (public - for authentication)
+  namespace :auth do
+    namespace :qbo_sso do
+      post :connect          # Initiate QBO SSO flow
+      get :callback          # OAuth callback from Intuit
+    end
+  end
+
+  # OAuth2 API linking routes (protected - requires login)
   namespace :auth do
     namespace :qbo do
       get :connect
