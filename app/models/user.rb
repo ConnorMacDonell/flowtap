@@ -14,16 +14,12 @@ class User < ApplicationRecord
 
   # Associations
   has_one :subscription, dependent: :destroy
+  has_many :audit_logs, dependent: :nullify
 
   # Validations
   validates :first_name, presence: true, length: { maximum: 50 }
   validates :last_name, presence: true, length: { maximum: 50 }
   validates :timezone, presence: true
-
-  # Virtual attribute for EULA acceptance
-  attr_accessor :eula_accepted
-
-  validate :eula_must_be_accepted, on: :create
 
   # Callbacks
   after_update :send_welcome_email, if: :confirmed_at_previously_changed?
@@ -36,7 +32,10 @@ class User < ApplicationRecord
 
   # Soft delete
   def soft_delete!
-    # Cancel Stripe subscription BEFORE deleting account
+    # Step 1: Revoke OAuth tokens BEFORE deleting account
+    revoke_oauth_tokens_on_deletion
+
+    # Step 2: Cancel Stripe subscription
     # This is synchronous and will raise an error if it fails
     if subscription&.stripe_subscription_id.present?
       service = StripeSubscriptionService.new(self)
@@ -49,7 +48,10 @@ class User < ApplicationRecord
       end
     end
 
-    # Only proceed with deletion if subscription was cancelled (or didn't exist)
+    # Step 3: Clear OAuth data from database
+    clear_oauth_data_on_deletion
+
+    # Step 4: Mark account as deleted
     update!(deleted_at: Time.current)
   end
 
@@ -92,6 +94,11 @@ class User < ApplicationRecord
     has_active_subscription?
   end
 
+  # QBO SSO helpers
+  def qbo_sso_user?
+    qbo_sub_id.present?
+  end
+
   # QBO integration helpers
   def qbo_connected?
     qbo_realm_id.present? && qbo_access_token.present?
@@ -129,7 +136,7 @@ class User < ApplicationRecord
       qbo_token_expires_at: nil,
       qbo_connected_at: nil,
       qbo_id_token: nil,
-      qbo_user_sub: nil,
+      qbo_sub_id: nil,
       qbo_user_email: nil,
       qbo_user_email_verified: nil,
       qbo_user_given_name: nil,
@@ -192,15 +199,92 @@ class User < ApplicationRecord
 
   private
 
-  def eula_must_be_accepted
-    unless eula_accepted == '1' || eula_accepted == true
-      errors.add(:eula_accepted, "You must agree to the EULA and Privacy Policy to create an account")
-    end
+  # Override Devise method to make password optional for SSO users
+  def password_required?
+    return false if qbo_sso_user?
+    super
   end
 
   def send_welcome_email
     return unless confirmed_at.present? && confirmed_at_previously_changed?
     UserMailer.welcome_email(self).deliver_now
     # EmailJob.perform_later('UserMailer', 'welcome_email', id)
+  end
+
+  # Revoke OAuth tokens with external providers before account deletion
+  def revoke_oauth_tokens_on_deletion
+    revoke_qbo_tokens_on_deletion
+    revoke_freelancer_tokens_on_deletion
+  end
+
+  # Revoke QBO OAuth tokens with Intuit before deletion
+  def revoke_qbo_tokens_on_deletion
+    return unless qbo_connected?
+
+    begin
+      qbo_service = QboService.new(self)
+      if qbo_service.revoke_tokens!
+        Rails.logger.info("Account deletion: Successfully revoked QBO tokens for user #{id}")
+      else
+        Rails.logger.warn("Account deletion: Failed to revoke QBO tokens for user #{id}, proceeding with deletion")
+      end
+    rescue ArgumentError => e
+      # QboService initialization failed (e.g., token already expired and can't refresh)
+      Rails.logger.warn("Account deletion: QBO tokens already invalid for user #{id}: #{e.message}")
+    rescue => e
+      # Log error but don't block account deletion
+      Rails.logger.error("Account deletion: Error revoking QBO tokens for user #{id}: #{e.message}")
+    end
+  end
+
+  # Revoke Freelancer OAuth tokens before deletion
+  # Note: Freelancer API doesn't provide a token revocation endpoint as of implementation
+  # Tokens will expire naturally (access: 1 hour, refresh: 6 months)
+  def revoke_freelancer_tokens_on_deletion
+    return unless freelancer_connected?
+
+    # TODO: Implement when Freelancer provides a revoke endpoint
+    Rails.logger.info("Account deletion: Freelancer tokens for user #{id} will expire naturally (no revoke endpoint available)")
+  end
+
+  # Clear OAuth data from database after revocation
+  def clear_oauth_data_on_deletion
+    clear_qbo_data_on_deletion
+    clear_freelancer_data_on_deletion
+  end
+
+  # Clear QBO OAuth data from database
+  def clear_qbo_data_on_deletion
+    return unless qbo_connected? || qbo_sso_user?
+
+    update_columns(
+      qbo_realm_id: nil,
+      qbo_access_token: nil,
+      qbo_refresh_token: nil,
+      qbo_token_expires_at: nil,
+      qbo_connected_at: nil,
+      qbo_id_token: nil,
+      qbo_sub_id: nil,
+      qbo_user_email: nil,
+      qbo_user_email_verified: nil,
+      qbo_user_given_name: nil,
+      qbo_user_family_name: nil
+    )
+    Rails.logger.info("Account deletion: Cleared QBO OAuth data for user #{id}")
+  end
+
+  # Clear Freelancer OAuth data from database
+  def clear_freelancer_data_on_deletion
+    return unless freelancer_connected?
+
+    update_columns(
+      freelancer_user_id: nil,
+      freelancer_access_token: nil,
+      freelancer_refresh_token: nil,
+      freelancer_token_expires_at: nil,
+      freelancer_scopes: nil,
+      freelancer_connected_at: nil
+    )
+    Rails.logger.info("Account deletion: Cleared Freelancer OAuth data for user #{id}")
   end
 end
