@@ -15,7 +15,7 @@ class QboService
     return false unless id_token.present?
 
     begin
-      oauth_client.id_token.validate_id_token(id_token)
+      oauth_client.openid.validate_id_token(id_token)
     rescue IntuitOAuth::OAuth2ClientException => e
       Rails.logger.error("QBO ID token validation failed: #{e.message}")
       false
@@ -49,7 +49,12 @@ class QboService
 
   def initialize(user)
     @user = user
-    raise ArgumentError, 'User must have valid QBO connection' unless @user.qbo_token_valid?
+    @token_refresh_attempted = false
+
+    # Allow initialization if user has valid token or can refresh expired token
+    unless @user.qbo_token_valid? || @user.qbo_can_refresh?
+      raise ArgumentError, 'User must have valid QBO connection or ability to refresh. Please reauthorize.'
+    end
 
     @qbo_api = QboApi.new(
       access_token: @user.qbo_access_token,
@@ -65,8 +70,35 @@ class QboService
   end
 
   def test_connection
+    # Ensure we have a valid token before making request
+    ensure_valid_token!
+
     response = @qbo_api.get(:companyinfo, 1)
     response.present?
+  rescue QboApi::Unauthorized => e
+    # Try to refresh token and retry once on 401
+    if !@token_refresh_attempted && @user.qbo_can_refresh?
+      Rails.logger.info "QBO API: Attempting token refresh due to 401 response for user #{@user.id}"
+      @token_refresh_attempted = true
+
+      if refresh_token!
+        @user.reload
+        # Retry the API call with new token, catching any errors
+        begin
+          response = @qbo_api.get(:companyinfo, 1)
+          return response.present?
+        rescue QboApi::Unauthorized, QboApi::Error => retry_error
+          # Second 401 or other error after refresh - log and return false
+          log_qbo_error('test_connection', retry_error)
+          return false
+        end
+      else
+        Rails.logger.error "QBO API: Token refresh failed, cannot retry request"
+      end
+    end
+
+    log_qbo_error('test_connection', e)
+    false
   rescue QboApi::Error => e
     log_qbo_error('test_connection', e)
     false
@@ -93,6 +125,7 @@ class QboService
     )
 
     Rails.logger.info("QBO token refreshed successfully for user #{@user.id}")
+    @token_refresh_attempted = false # Reset for future requests
     true
   rescue IntuitOAuth::OAuth2ClientException => e
     handle_oauth_error(e)
@@ -123,6 +156,20 @@ class QboService
   end
 
   private
+
+  def ensure_valid_token!
+    # If token is expired or expiring soon, try to refresh proactively
+    if @user.qbo_needs_refresh? && @user.qbo_can_refresh? && !@token_refresh_attempted
+      Rails.logger.info "QBO API: Proactively refreshing token before request for user #{@user.id}"
+      if refresh_token!
+        @user.reload
+      end
+    elsif @user.qbo_token_expired? && !@user.qbo_can_refresh?
+      raise ArgumentError, 'QBO token expired and cannot be refreshed. User needs to reauthorize.'
+    elsif !@user.qbo_token_valid? && !@user.qbo_can_refresh?
+      raise ArgumentError, 'No valid QBO token available and cannot refresh. User needs to authorize.'
+    end
+  end
 
   def qbo_oauth_client
     @qbo_oauth_client ||= IntuitOAuth::Client.new(
