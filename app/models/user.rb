@@ -87,7 +87,7 @@ class User < ApplicationRecord
   end
 
   def has_active_subscription?
-    subscription&.active? || false
+    subscription&.active_or_trial? || false
   end
 
   def can_access_feature?(feature)

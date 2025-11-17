@@ -107,6 +107,12 @@ class QboSsoService
 
       Rails.logger.info("QBO SSO: Created new user #{user.id} from QBO (sub: #{user_info[:sub]})")
 
+      # Create trial subscription for QBO SSO users
+      user.create_subscription!(
+        status: 'inactive'
+      )
+      Rails.logger.info("QBO SSO: Created trial subscription for user #{user.id}")
+
       # Create audit log for compliance
       AuditLog.create(
         user_id: user.id,

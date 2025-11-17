@@ -39,6 +39,18 @@ class Subscription < ApplicationRecord
     status == 'paid'
   end
 
+  def qbo_sso_free_trial?
+    return false unless user&.qbo_sso_user?
+    return false unless created_at.present?
+
+    created_at > 14.days.ago
+  end
+
+  def active_or_trial?
+    return false if status == 'canceled'
+    status == 'paid' || qbo_sso_free_trial?
+  end
+
   def canceled?
     status == 'canceled'
   end
