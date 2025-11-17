@@ -1,3 +1,14 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Sign in with Intuit button hover effect */
+@layer components {
+  #qbo-sso-button:hover .sign-in-intuit-default {
+    @apply hidden;
+  }
+
+  #qbo-sso-button:hover .sign-in-intuit-hover {
+    @apply block;
+  }
+}
