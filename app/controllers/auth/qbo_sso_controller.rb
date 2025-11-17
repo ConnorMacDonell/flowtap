@@ -2,7 +2,7 @@
 # Handles user signup and login via QBO OpenID Connect
 class Auth::QboSsoController < ApplicationController
   # Skip authentication - this IS the authentication
-  skip_before_action :authenticate_user!, only: [:connect, :callback]
+  skip_before_action :authenticate_user!, only: [:connect, :callback, :complete]
 
   # Initiate QBO SSO flow
   # Works for both new signups and returning users
@@ -15,12 +15,37 @@ class Auth::QboSsoController < ApplicationController
   end
 
   # Handle OAuth callback from QuickBooks
-  # Creates or logs in user based on QBO OpenID data
+  # Security: Implements 302 redirect pattern per Intuit requirements
+  # Stores sensitive parameters in session and redirects to prevent token leakage via Referer header
   def callback
+    # Store OAuth parameters in session (encrypted by Rails)
+    session[:qbo_sso_callback_params] = {
+      code: params[:code],
+      state: params[:state],
+      realm_id: params[:realmId]
+    }
+
+    # Immediately issue 302 redirect to clean URL (no sensitive data in URL)
+    # This prevents tokens from leaking via Referer header
+    redirect_to auth_qbo_sso_complete_path, status: :found  # 302 Found
+  end
+
+  # Complete the OAuth callback after 302 redirect
+  # This action has a clean URL with no sensitive parameters
+  def complete
     begin
+      # Retrieve OAuth parameters from session
+      callback_params = session.delete(:qbo_sso_callback_params)
+
+      unless callback_params
+        Rails.logger.error "QBO SSO: No callback params in session"
+        redirect_to new_user_session_path, alert: 'Authentication session expired. Please try again.'
+        return
+      end
+
       # Validate state parameter for CSRF protection
-      unless params[:state].present? && params[:state] == session[:qbo_sso_state]
-        Rails.logger.error "QBO SSO state mismatch: expected #{session[:qbo_sso_state]}, got #{params[:state]}"
+      unless callback_params[:state].present? && callback_params[:state] == session[:qbo_sso_state]
+        Rails.logger.error "QBO SSO state mismatch: expected #{session[:qbo_sso_state]}, got #{callback_params[:state]}"
         redirect_to new_user_session_path, alert: 'Authentication failed. Please try again.'
         return
       end
@@ -29,7 +54,7 @@ class Auth::QboSsoController < ApplicationController
       session.delete(:qbo_sso_state)
 
       # Exchange authorization code for tokens
-      token_response = exchange_code_for_tokens(params[:code])
+      token_response = exchange_code_for_tokens(callback_params[:code])
 
       # Validate ID token (OpenID Connect requirement)
       unless QboService.validate_id_token(qbo_client, token_response[:id_token])
@@ -49,7 +74,7 @@ class Auth::QboSsoController < ApplicationController
       # CRITICAL: Verify email is verified (per Intuit documentation requirement)
       unless user_info[:email_verified]
         Rails.logger.warn "QBO SSO: Email not verified for sub #{user_info[:sub]}"
-        redirect_to new_user_session_path, alert: 'Your QuickBooks email is not verified. Please verify your email with Intuit and try again.'
+        render :email_not_verified, status: :forbidden
         return
       end
 
@@ -57,7 +82,7 @@ class Auth::QboSsoController < ApplicationController
       user = QboSsoService.find_or_create_user(
         user_info: user_info,
         token_response: token_response,
-        realm_id: params[:realmId]
+        realm_id: callback_params[:realm_id]
       )
 
       if user.persisted?

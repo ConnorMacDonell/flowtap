@@ -9,11 +9,38 @@ class Auth::QboController < ApplicationController
     redirect_to qbo_authorization_url(state), allow_other_host: true
   end
 
+  # Handle OAuth callback from QuickBooks
+  # Security: Implements 302 redirect pattern per Intuit requirements
+  # Stores sensitive parameters in session and redirects to prevent token leakage via Referer header
   def callback
+    # Store OAuth parameters in session (encrypted by Rails)
+    session[:qbo_callback_params] = {
+      code: params[:code],
+      state: params[:state],
+      realm_id: params[:realmId]
+    }
+
+    # Immediately issue 302 redirect to clean URL (no sensitive data in URL)
+    # This prevents tokens from leaking via Referer header
+    redirect_to auth_qbo_complete_path, status: :found  # 302 Found
+  end
+
+  # Complete the OAuth callback after 302 redirect
+  # This action has a clean URL with no sensitive parameters
+  def complete
     begin
+      # Retrieve OAuth parameters from session
+      callback_params = session.delete(:qbo_callback_params)
+
+      unless callback_params
+        Rails.logger.error "QBO: No callback params in session for user #{current_user.id}"
+        redirect_to dashboard_path, alert: 'Authentication session expired. Please try again.'
+        return
+      end
+
       # Validate state parameter for CSRF protection
-      unless params[:state].present? && params[:state] == session[:qbo_oauth_state]
-        Rails.logger.error "QBO OAuth state mismatch: expected #{session[:qbo_oauth_state]}, got #{params[:state]}"
+      unless callback_params[:state].present? && callback_params[:state] == session[:qbo_oauth_state]
+        Rails.logger.error "QBO OAuth state mismatch: expected #{session[:qbo_oauth_state]}, got #{callback_params[:state]}"
         redirect_to dashboard_path, alert: 'OAuth state validation failed. Please try connecting again.'
         return
       end
@@ -21,7 +48,7 @@ class Auth::QboController < ApplicationController
       # Clear the state from session after validation
       session.delete(:qbo_oauth_state)
 
-      token_response = exchange_code_for_tokens(params[:code])
+      token_response = exchange_code_for_tokens(callback_params[:code])
 
       # Validate ID token (OpenID Connect requirement)
       unless QboService.validate_id_token(qbo_client, token_response[:id_token])
@@ -47,7 +74,7 @@ class Auth::QboController < ApplicationController
 
       # Store all OAuth and OpenID data
       current_user.update!(
-        qbo_realm_id: params[:realmId],
+        qbo_realm_id: callback_params[:realm_id],
         qbo_access_token: token_response[:access_token],
         qbo_refresh_token: token_response[:refresh_token],
         qbo_token_expires_at: Time.current + token_response[:expires_in].seconds,

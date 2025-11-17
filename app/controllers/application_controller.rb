@@ -3,6 +3,7 @@ class ApplicationController < ActionController::Base
   before_action :configure_permitted_parameters, if: :devise_controller?
   before_action :set_request_id
   before_action :check_subscription_status, unless: :devise_controller?
+  after_action :set_cache_headers
   
   # Standard Rails error handling
   rescue_from StandardError, with: :handle_standard_error
@@ -46,6 +47,23 @@ class ApplicationController < ActionController::Base
 
   def set_request_id
     Thread.current[:request_id] = request.uuid
+  end
+
+  # Security: Prevent sensitive data from being cached by browsers/proxies
+  # Required by Intuit security requirements for QBO integration
+  def set_cache_headers
+    # Use Rails' CacheControl API (the Rails way)
+    # This works with Rails' caching middleware and won't be overwritten
+    response.cache_control.merge!(
+      no_cache: true,
+      no_store: true,
+      must_revalidate: true,
+      public: false
+    )
+
+    # Set additional headers for HTTP/1.0 compatibility
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
   end
 
   def check_subscription_status

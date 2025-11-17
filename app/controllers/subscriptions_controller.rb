@@ -65,7 +65,7 @@ class SubscriptionsController < ApplicationController
   def cancel
     @subscription = current_user.subscription
 
-    unless @subscription&.active?
+    unless @subscription&.active_or_trial?
       redirect_to subscriptions_path, alert: 'No active subscription to cancel'
       return
     end
