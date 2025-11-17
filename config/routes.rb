@@ -38,11 +38,16 @@ Rails.application.routes.draw do
   # Stripe webhook (public)
   post '/stripe/webhooks', to: 'stripe_webhooks#create'
   
+  # QuickBooks App Store SSO routes (public)
+  get '/sso/launch', to: 'sso#launch'           # Launch URL from App Store
+  get '/sso/disconnected', to: 'sso#disconnected' # Disconnect landing page
+
   # OAuth2 SSO routes (public - for authentication)
   namespace :auth do
     namespace :qbo_sso do
-      post :connect          # Initiate QBO SSO flow
-      get :callback          # OAuth callback from Intuit
+      get :connect   # Initiate QBO SSO flow (used by buttons and App Store Launch)
+      get :callback  # OAuth callback from Intuit (302 redirects to complete)
+      get :complete  # Internal endpoint - completes OAuth after 302 redirect
     end
   end
 
@@ -50,7 +55,8 @@ Rails.application.routes.draw do
   namespace :auth do
     namespace :qbo do
       get :connect
-      get :callback
+      get :callback       # OAuth callback from Intuit (302 redirects to complete)
+      get :complete       # Internal endpoint - completes OAuth after 302 redirect
       delete :disconnect
       get :status
       get :test_connection
