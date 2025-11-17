@@ -1,0 +1,78 @@
+<div class="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+  <div class="sm:mx-auto sm:w-full sm:max-w-md">
+    <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-yellow-100">
+      <svg class="h-6 w-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+      </svg>
+    </div>
+    <h2 class="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
+      Email Verification Required
+    </h2>
+    <p class="mt-2 text-center text-sm text-gray-600">
+      Please verify your email address with Intuit to continue
+    </p>
+  </div>
+
+  <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+    <div class="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+      <div class="space-y-6">
+        <div class="rounded-md bg-yellow-50 p-4">
+          <div class="flex">
+            <div class="flex-shrink-0">
+              <svg class="h-5 w-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+              </svg>
+            </div>
+            <div class="ml-3">
+              <h3 class="text-sm font-medium text-yellow-800">
+                Unverified Email Address
+              </h3>
+              <div class="mt-2 text-sm text-yellow-700">
+                <p>
+                  Your QuickBooks email address has not been verified with Intuit.
+                  For security reasons, we require verified email addresses before allowing access to your account.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h3 class="text-sm font-medium text-gray-900 mb-3">
+            To verify your email:
+          </h3>
+          <ol class="list-decimal list-inside space-y-2 text-sm text-gray-600">
+            <li>Click the button below to go to your Intuit account settings</li>
+            <li>Navigate to the "Sign in & security" section</li>
+            <li>Check the status of your email address</li>
+            <li>If needed, click to resend the verification email</li>
+            <li>Check your inbox and click the verification link</li>
+            <li>Return here and try signing in again</li>
+          </ol>
+        </div>
+
+        <div class="space-y-3">
+          <a href="https://accounts.intuit.com/app/account-manager/security"
+             target="_blank"
+             rel="noopener noreferrer"
+             class="w-full flex justify-center items-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+            Verify Email with Intuit
+          </a>
+
+          <%= link_to "Back to Sign In", new_user_session_path,
+              class: "w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" %>
+        </div>
+
+        <div class="mt-6 border-t border-gray-200 pt-6">
+          <p class="text-xs text-gray-500 text-center">
+            Having trouble? Make sure you're verifying the same email address you used to sign up with QuickBooks.
+            If you continue to experience issues, please contact our support team.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

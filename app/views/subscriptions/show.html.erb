@@ -27,8 +27,8 @@
             <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
               <dt class="text-sm font-medium text-gray-500">Status</dt>
               <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full <%= @subscription.active? ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' %>">
-                  <%= @subscription.active? ? 'Active' : 'Canceled' %>
+                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full <%= @subscription.active_or_trial? ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' %>">
+                  <%= @subscription.active_or_trial? ? 'Active' : 'Canceled' %>
                 </span>
               </dd>
             </div>
