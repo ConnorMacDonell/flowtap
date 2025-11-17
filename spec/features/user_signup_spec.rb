@@ -86,14 +86,26 @@ RSpec.describe 'User Signup Flow', type: :feature do
       expect(User.where(email: 'existing@example.com').count).to eq(1)  # Still only one user
     end
 
-    it 'requires password to be at least 6 characters' do
+    it 'requires password to be at least 8 characters (Intuit requirement)' do
       visit new_user_registration_path
-      fill_signup_form(email: 'test@example.com', password: '12345')
+      fill_signup_form(email: 'test@example.com', password: 'short7')  # 6 chars, below minimum
 
       click_button 'Create Account'
 
-      expect(page).to have_content('is too short (minimum is 6 characters)')
+      expect(page).to have_content('is too short (minimum is 8 characters)')
       expect(User.count).to eq(0)
+    end
+
+    it 'accepts password with exactly 8 characters' do
+      visit new_user_registration_path
+      fill_signup_form(email: 'test@example.com', password: 'pass1234')  # Exactly 8 chars
+
+      expect {
+        click_button 'Create Account'
+      }.to change(User, :count).by(1)
+
+      user = User.last
+      expect(user.email).to eq('test@example.com')
     end
 
     it 'requires password confirmation to match password' do

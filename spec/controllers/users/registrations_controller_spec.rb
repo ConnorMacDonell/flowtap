@@ -18,6 +18,15 @@ RSpec.describe Users::RegistrationsController, type: :controller do
       get :new
       expect(response).to be_successful
     end
+
+    it 'disables caching per Intuit security requirements (inherited from ApplicationController)' do
+      get :new
+
+      # Verify caching is disabled and compatibility headers are set
+      expect(response.headers['Cache-Control']).to include('no-store')
+      expect(response.headers['Pragma']).to eq('no-cache')
+      expect(response.headers['Expires']).to eq('0')
+    end
   end
 
   describe 'POST #create' do
@@ -146,11 +155,11 @@ RSpec.describe Users::RegistrationsController, type: :controller do
         }.not_to change(User, :count)
       end
 
-      it 'requires password minimum length' do
+      it 'requires password minimum length of 8 characters (Intuit requirement)' do
         params = valid_params.deep_dup
-        params[:user][:password] = 'short'
+        params[:user][:password] = 'short'  # 5 characters, below minimum
         params[:user][:password_confirmation] = 'short'
-        
+
         expect {
           post :create, params: params
         }.not_to change(User, :count)

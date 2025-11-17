@@ -62,10 +62,54 @@ RSpec.describe Auth::QboController, type: :controller do
   end
 
   describe 'GET #callback' do
-    it 'handles successful token exchange' do
+    it 'stores OAuth parameters in session' do
+      get :callback, params: { code: 'auth_code_123', realmId: 'realm_123', state: 'test_state_123' }
+
+      expect(session[:qbo_callback_params]).to be_present
+      expect(session[:qbo_callback_params][:code]).to eq('auth_code_123')
+      expect(session[:qbo_callback_params][:state]).to eq('test_state_123')
+      expect(session[:qbo_callback_params][:realm_id]).to eq('realm_123')
+    end
+
+    it 'issues 302 redirect to process endpoint' do
+      get :callback, params: { code: 'auth_code_123', realmId: 'realm_123', state: 'test_state_123' }
+
+      expect(response).to redirect_to(auth_qbo_complete_path)
+      expect(response.status).to eq(302)
+    end
+
+    it 'does not process OAuth flow in callback (security: prevents token leakage via Referer)' do
+      # Should NOT exchange code for tokens in callback
+      expect(controller).not_to receive(:exchange_code_for_tokens)
+      expect(QboService).not_to receive(:validate_id_token)
+      expect(QboService).not_to receive(:fetch_user_info)
+
+      get :callback, params: { code: 'auth_code_123', realmId: 'realm_123', state: 'test_state_123' }
+    end
+  end
+
+  describe 'GET #complete' do
+    before do
       # Set session state for OAuth validation
       session[:qbo_oauth_state] = 'test_state_123'
+      # Simulate callback having stored params in session
+      session[:qbo_callback_params] = {
+        code: 'auth_code_123',
+        state: 'test_state_123',
+        realm_id: 'realm_123'
+      }
+    end
 
+    it 'redirects with error when no callback params in session' do
+      session.delete(:qbo_callback_params)
+
+      get :complete
+
+      expect(response).to redirect_to(dashboard_path)
+      expect(flash[:alert]).to eq('Authentication session expired. Please try again.')
+    end
+
+    it 'handles successful token exchange' do
       # Mock the controller's private method directly - SDK returns symbol keys
       allow(controller).to receive(:exchange_code_for_tokens).and_return({
         access_token: 'qbo_access_token_123',
@@ -87,7 +131,7 @@ RSpec.describe Auth::QboController, type: :controller do
       original_time = Time.current
       allow(Time).to receive(:current).and_return(original_time)
 
-      get :callback, params: { code: 'auth_code_123', realmId: 'realm_123', state: 'test_state_123' }
+      get :complete
 
       user.reload
       expect(user.qbo_realm_id).to eq('realm_123')
@@ -107,14 +151,11 @@ RSpec.describe Auth::QboController, type: :controller do
     end
 
     it 'handles SDK OAuth errors' do
-      # Set session state for OAuth validation
-      session[:qbo_oauth_state] = 'test_state_123'
-
       # Mock SDK-specific OAuth error
       oauth_error = create_oauth_error(body: 'invalid_grant', intuit_tid: 'test-tid-123')
       allow(controller).to receive(:exchange_code_for_tokens).and_raise(oauth_error)
 
-      get :callback, params: { code: 'invalid_code', realmId: 'realm_123', state: 'test_state_123' }
+      get :complete
 
       user.reload
       expect(user.qbo_realm_id).to be_nil
@@ -124,12 +165,9 @@ RSpec.describe Auth::QboController, type: :controller do
     end
 
     it 'handles general token exchange failures' do
-      # Set session state for OAuth validation
-      session[:qbo_oauth_state] = 'test_state_123'
-
       allow(controller).to receive(:exchange_code_for_tokens).and_raise(StandardError, 'Token exchange failed')
 
-      get :callback, params: { code: 'invalid_code', realmId: 'realm_123', state: 'test_state_123' }
+      get :complete
 
       user.reload
       expect(user.qbo_realm_id).to be_nil
@@ -139,8 +177,6 @@ RSpec.describe Auth::QboController, type: :controller do
     end
 
     it 'rejects connection when ID token validation fails' do
-      session[:qbo_oauth_state] = 'test_state_123'
-
       allow(controller).to receive(:exchange_code_for_tokens).and_return({
         access_token: 'qbo_access_token_123',
         refresh_token: 'qbo_refresh_token_123',
@@ -151,7 +187,7 @@ RSpec.describe Auth::QboController, type: :controller do
       # Mock ID token validation to fail
       allow(QboService).to receive(:validate_id_token).and_return(false)
 
-      get :callback, params: { code: 'auth_code_123', realmId: 'realm_123', state: 'test_state_123' }
+      get :complete
 
       user.reload
       expect(user.qbo_realm_id).to be_nil
@@ -162,8 +198,6 @@ RSpec.describe Auth::QboController, type: :controller do
     end
 
     it 'rejects connection when user info fetch fails' do
-      session[:qbo_oauth_state] = 'test_state_123'
-
       allow(controller).to receive(:exchange_code_for_tokens).and_return({
         access_token: 'qbo_access_token_123',
         refresh_token: 'qbo_refresh_token_123',
@@ -174,7 +208,7 @@ RSpec.describe Auth::QboController, type: :controller do
       allow(QboService).to receive(:validate_id_token).and_return(true)
       allow(QboService).to receive(:fetch_user_info).and_return(nil)
 
-      get :callback, params: { code: 'auth_code_123', realmId: 'realm_123', state: 'test_state_123' }
+      get :complete
 
       user.reload
       expect(user.qbo_realm_id).to be_nil
@@ -185,8 +219,6 @@ RSpec.describe Auth::QboController, type: :controller do
     end
 
     it 'rejects connection when email is not verified' do
-      session[:qbo_oauth_state] = 'test_state_123'
-
       allow(controller).to receive(:exchange_code_for_tokens).and_return({
         access_token: 'qbo_access_token_123',
         refresh_token: 'qbo_refresh_token_123',
@@ -203,7 +235,7 @@ RSpec.describe Auth::QboController, type: :controller do
         family_name: 'Doe'
       })
 
-      get :callback, params: { code: 'auth_code_123', realmId: 'realm_123', state: 'test_state_123' }
+      get :complete
 
       user.reload
       expect(user.qbo_realm_id).to be_nil
@@ -212,6 +244,68 @@ RSpec.describe Auth::QboController, type: :controller do
 
       expect(response).to redirect_to(dashboard_path)
       expect(flash[:alert]).to eq('Your QuickBooks email is not verified. Please verify your email with Intuit and try again.')
+    end
+
+    it 'rejects complete with missing state parameter in session' do
+      session[:qbo_callback_params][:state] = nil
+
+      get :complete
+
+      expect(response).to redirect_to(dashboard_path)
+      expect(flash[:alert]).to eq('OAuth state validation failed. Please try connecting again.')
+    end
+
+    it 'rejects complete with mismatched state parameter' do
+      session[:qbo_callback_params][:state] = 'wrong_state'
+
+      get :complete
+
+      expect(response).to redirect_to(dashboard_path)
+      expect(flash[:alert]).to eq('OAuth state validation failed. Please try connecting again.')
+    end
+
+    it 'clears state from session after successful connection' do
+      allow(controller).to receive(:exchange_code_for_tokens).and_return({
+        access_token: 'qbo_access_token_123',
+        refresh_token: 'qbo_refresh_token_123',
+        expires_in: 3600,
+        id_token: 'qbo_id_token_123'
+      })
+
+      allow(QboService).to receive(:validate_id_token).and_return(true)
+      allow(QboService).to receive(:fetch_user_info).and_return({
+        sub: 'qbo_user_sub_123',
+        email: 'user@example.com',
+        email_verified: true,
+        given_name: 'John',
+        family_name: 'Doe'
+      })
+
+      get :complete
+
+      expect(session[:qbo_oauth_state]).to be_nil
+    end
+
+    it 'clears callback params from session after processing' do
+      allow(controller).to receive(:exchange_code_for_tokens).and_return({
+        access_token: 'qbo_access_token_123',
+        refresh_token: 'qbo_refresh_token_123',
+        expires_in: 3600,
+        id_token: 'qbo_id_token_123'
+      })
+
+      allow(QboService).to receive(:validate_id_token).and_return(true)
+      allow(QboService).to receive(:fetch_user_info).and_return({
+        sub: 'qbo_user_sub_123',
+        email: 'user@example.com',
+        email_verified: true,
+        given_name: 'John',
+        family_name: 'Doe'
+      })
+
+      get :complete
+
+      expect(session[:qbo_callback_params]).to be_nil
     end
   end
 

@@ -307,6 +307,88 @@ RSpec.describe User, type: :model do
       end
     end
 
+    describe '#has_active_subscription?' do
+      context 'user with paid subscription' do
+        let(:paid_user) { create(:user) }
+
+        before do
+          create(:subscription, user: paid_user, status: 'paid')
+        end
+
+        it 'returns true' do
+          expect(paid_user.has_active_subscription?).to be true
+        end
+      end
+
+      context 'user with canceled subscription' do
+        let(:canceled_user) { create(:user, without_subscription: true) }
+
+        before do
+          create(:subscription, user: canceled_user, status: 'canceled')
+        end
+
+        it 'returns false' do
+          expect(canceled_user.has_active_subscription?).to be false
+        end
+      end
+
+      context 'user with no subscription' do
+        let(:no_sub_user) { create(:user, without_subscription: true) }
+
+        it 'returns false' do
+          expect(no_sub_user.has_active_subscription?).to be false
+        end
+      end
+
+      context 'QBO SSO user with active trial (less than 14 days)' do
+        let(:trial_user) { create(:user, qbo_sub_id: 'qbo_sub_123', without_subscription: true) }
+
+        before do
+          create(:subscription, user: trial_user, status: 'inactive')
+        end
+
+        it 'returns true' do
+          expect(trial_user.has_active_subscription?).to be true
+        end
+      end
+
+      context 'QBO SSO user with expired trial (14+ days)' do
+        let(:expired_trial_user) { create(:user, qbo_sub_id: 'qbo_sub_123', without_subscription: true) }
+
+        before do
+          create(:subscription, user: expired_trial_user, status: 'inactive', created_at: 15.days.ago)
+        end
+
+        it 'returns false' do
+          expect(expired_trial_user.has_active_subscription?).to be false
+        end
+      end
+
+      context 'email/password user with inactive subscription' do
+        let(:email_user) { create(:user, qbo_sub_id: nil, without_subscription: true) }
+
+        before do
+          create(:subscription, user: email_user, status: 'inactive')
+        end
+
+        it 'returns false' do
+          expect(email_user.has_active_subscription?).to be false
+        end
+      end
+
+      context 'QBO SSO user who converted from trial to paid' do
+        let(:converted_user) { create(:user, qbo_sub_id: 'qbo_sub_123', without_subscription: true) }
+
+        before do
+          create(:subscription, user: converted_user, status: 'paid', created_at: 20.days.ago)
+        end
+
+        it 'returns true' do
+          expect(converted_user.has_active_subscription?).to be true
+        end
+      end
+    end
+
     # Freelancer Integration Tests
     describe '#freelancer_connected?' do
       it 'returns false when user has no freelancer connection' do
