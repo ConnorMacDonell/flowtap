@@ -14,10 +14,11 @@ class Auth::QboController < ApplicationController
   # Stores sensitive parameters in session and redirects to prevent token leakage via Referer header
   def callback
     # Store OAuth parameters in session (encrypted by Rails)
+    # IMPORTANT: Use string keys - session serialization converts symbol keys to strings
     session[:qbo_callback_params] = {
-      code: params[:code],
-      state: params[:state],
-      realm_id: params[:realmId]
+      'code' => params[:code],
+      'state' => params[:state],
+      'realm_id' => params[:realmId]
     }
 
     # Immediately issue 302 redirect to clean URL (no sensitive data in URL)
@@ -39,8 +40,9 @@ class Auth::QboController < ApplicationController
       end
 
       # Validate state parameter for CSRF protection
-      unless callback_params[:state].present? && callback_params[:state] == session[:qbo_oauth_state]
-        Rails.logger.error "QBO OAuth state mismatch: expected #{session[:qbo_oauth_state]}, got #{callback_params[:state]}"
+      # Use string keys - session serialization converts symbol keys to strings
+      unless callback_params['state'].present? && callback_params['state'] == session[:qbo_oauth_state]
+        Rails.logger.error "QBO OAuth state mismatch: expected #{session[:qbo_oauth_state]}, got #{callback_params['state']}"
         redirect_to dashboard_path, alert: 'OAuth state validation failed. Please try connecting again.'
         return
       end
@@ -48,7 +50,7 @@ class Auth::QboController < ApplicationController
       # Clear the state from session after validation
       session.delete(:qbo_oauth_state)
 
-      token_response = exchange_code_for_tokens(callback_params[:code])
+      token_response = exchange_code_for_tokens(callback_params['code'])
 
       # Validate ID token (OpenID Connect requirement)
       unless QboService.validate_id_token(qbo_client, token_response[:id_token])
@@ -74,7 +76,7 @@ class Auth::QboController < ApplicationController
 
       # Store all OAuth and OpenID data
       current_user.update!(
-        qbo_realm_id: callback_params[:realm_id],
+        qbo_realm_id: callback_params['realm_id'],
         qbo_access_token: token_response[:access_token],
         qbo_refresh_token: token_response[:refresh_token],
         qbo_token_expires_at: Time.current + token_response[:expires_in].seconds,

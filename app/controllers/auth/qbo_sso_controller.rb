@@ -19,10 +19,11 @@ class Auth::QboSsoController < ApplicationController
   # Stores sensitive parameters in session and redirects to prevent token leakage via Referer header
   def callback
     # Store OAuth parameters in session (encrypted by Rails)
+    # IMPORTANT: Use string keys - session serialization converts symbol keys to strings
     session[:qbo_sso_callback_params] = {
-      code: params[:code],
-      state: params[:state],
-      realm_id: params[:realmId]
+      'code' => params[:code],
+      'state' => params[:state],
+      'realm_id' => params[:realmId]
     }
 
     # Immediately issue 302 redirect to clean URL (no sensitive data in URL)
@@ -44,8 +45,9 @@ class Auth::QboSsoController < ApplicationController
       end
 
       # Validate state parameter for CSRF protection
-      unless callback_params[:state].present? && callback_params[:state] == session[:qbo_sso_state]
-        Rails.logger.error "QBO SSO state mismatch: expected #{session[:qbo_sso_state]}, got #{callback_params[:state]}"
+      # Use string keys - session serialization converts symbol keys to strings
+      unless callback_params['state'].present? && callback_params['state'] == session[:qbo_sso_state]
+        Rails.logger.error "QBO SSO state mismatch: expected #{session[:qbo_sso_state]}, got #{callback_params['state']}"
         redirect_to new_user_session_path, alert: 'Authentication failed. Please try again.'
         return
       end
@@ -54,7 +56,7 @@ class Auth::QboSsoController < ApplicationController
       session.delete(:qbo_sso_state)
 
       # Exchange authorization code for tokens
-      token_response = exchange_code_for_tokens(callback_params[:code])
+      token_response = exchange_code_for_tokens(callback_params['code'])
 
       # Validate ID token (OpenID Connect requirement)
       unless QboService.validate_id_token(qbo_client, token_response[:id_token])
@@ -82,7 +84,7 @@ class Auth::QboSsoController < ApplicationController
       user = QboSsoService.find_or_create_user(
         user_info: user_info,
         token_response: token_response,
-        realm_id: callback_params[:realm_id]
+        realm_id: callback_params['realm_id']
       )
 
       if user.persisted?
