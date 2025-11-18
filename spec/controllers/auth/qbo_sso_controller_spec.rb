@@ -74,13 +74,13 @@ RSpec.describe Auth::QboSsoController, type: :controller do
   end
 
   describe 'GET #callback' do
-    it 'stores OAuth parameters in session' do
+    it 'stores OAuth parameters in session with string keys' do
       get :callback, params: { code: 'auth_code_123', realmId: 'realm_123', state: 'test_state_123' }
 
       expect(session[:qbo_sso_callback_params]).to be_present
-      expect(session[:qbo_sso_callback_params][:code]).to eq('auth_code_123')
-      expect(session[:qbo_sso_callback_params][:state]).to eq('test_state_123')
-      expect(session[:qbo_sso_callback_params][:realm_id]).to eq('realm_123')
+      expect(session[:qbo_sso_callback_params]['code']).to eq('auth_code_123')
+      expect(session[:qbo_sso_callback_params]['state']).to eq('test_state_123')
+      expect(session[:qbo_sso_callback_params]['realm_id']).to eq('realm_123')
     end
 
     it 'issues 302 redirect to process endpoint' do
@@ -123,11 +123,11 @@ RSpec.describe Auth::QboSsoController, type: :controller do
     before do
       # Set session state for OAuth validation
       session[:qbo_sso_state] = 'test_state_123'
-      # Simulate callback having stored params in session
+      # Simulate callback having stored params in session with string keys
       session[:qbo_sso_callback_params] = {
-        code: 'auth_code_123',
-        state: 'test_state_123',
-        realm_id: 'realm_123'
+        'code' => 'auth_code_123',
+        'state' => 'test_state_123',
+        'realm_id' => 'realm_123'
       }
     end
 
@@ -251,7 +251,7 @@ RSpec.describe Auth::QboSsoController, type: :controller do
 
       it 'finds existing user by QBO sub ID and updates tokens' do
         # Override session to test with new realm ID
-        session[:qbo_sso_callback_params][:realm_id] = 'new_realm'
+        session[:qbo_sso_callback_params]['realm_id'] = 'new_realm'
 
         allow(controller).to receive(:exchange_code_for_tokens).and_return(valid_token_response)
         allow(QboService).to receive(:validate_id_token).and_return(true)
@@ -344,7 +344,7 @@ RSpec.describe Auth::QboSsoController, type: :controller do
 
     context 'with CSRF protection (state parameter)' do
       it 'rejects complete with missing state parameter in session' do
-        session[:qbo_sso_callback_params][:state] = nil
+        session[:qbo_sso_callback_params]['state'] = nil
         allow(controller).to receive(:exchange_code_for_tokens).and_return(valid_token_response)
 
         get :complete
@@ -354,7 +354,7 @@ RSpec.describe Auth::QboSsoController, type: :controller do
       end
 
       it 'rejects complete with mismatched state parameter' do
-        session[:qbo_sso_callback_params][:state] = 'wrong_state'
+        session[:qbo_sso_callback_params]['state'] = 'wrong_state'
         allow(controller).to receive(:exchange_code_for_tokens).and_return(valid_token_response)
 
         get :complete
