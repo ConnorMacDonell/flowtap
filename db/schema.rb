@@ -48,7 +48,7 @@ ActiveRecord::Schema[7.1].define(version: 2025_11_14_002732) do
 
   create_table "subscriptions", force: :cascade do |t|
     t.bigint "user_id", null: false
-    t.string "status", default: "free", null: false
+    t.string "status", default: "inactive", null: false
     t.string "stripe_subscription_id"
     t.datetime "current_period_start"
     t.datetime "current_period_end"
