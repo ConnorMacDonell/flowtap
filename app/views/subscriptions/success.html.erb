@@ -1,4 +1,6 @@
-<div class="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+<div class="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8"
+     data-controller="auto-refresh"
+     data-auto-refresh-interval-value="2000">
   <div class="sm:mx-auto sm:w-full sm:max-w-md">
     <div class="text-center">
       <!-- Success Icon -->
@@ -36,11 +38,3 @@
     </div>
   </div>
 </div>
-
-<!-- Auto-refresh every 2 seconds to check subscription status -->
-<script>
-  // Reload page every 2 seconds to check if webhook has activated subscription
-  setTimeout(function() {
-    window.location.reload();
-  }, 2000);
-</script>
